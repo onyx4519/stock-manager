@@ -204,7 +204,12 @@ export function AuthForm({
                   <li>표시되는 정보는 투자 권유가 아니며 최종 판단과 책임은 사용자에게 있습니다.</li>
                   <li>사용자는 타인의 계정을 침해하거나 서비스를 부정하게 이용해서는 안 됩니다.</li>
                 </ul>
-                <p><Link className="inlineLink" href="/terms" target="_blank">서비스 이용약관 전체 보기</Link></p>
+                <p>
+                  동의하지 않으면 계정을 생성할 수 없습니다. {" "}
+                  <Link className="inlineLink" href="/terms" target="_blank">
+                    서비스 이용약관 전체 보기
+                  </Link>
+                </p>
               </div>
             </section>
 
