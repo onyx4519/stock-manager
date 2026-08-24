@@ -96,6 +96,7 @@ export async function registerAction(
       birth_date: birthDate,
       gender,
       account_creation_consent: true,
+      personalization_consent: formData.get("personalizationConsent") === "on",
     });
     (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);
   } catch (error) {

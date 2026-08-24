@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import {
+  type FormEvent,
+  type MouseEvent,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { AuthActionState } from "@/app/auth-actions";
 
 
@@ -13,9 +20,53 @@ export function AuthForm({
   mode: "login" | "register";
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
+  const [accountCreationConsent, setAccountCreationConsent] = useState(false);
+  const [personalizationConsent, setPersonalizationConsent] = useState(false);
   const registering = mode === "register";
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (consentModalOpen && !dialog.open) dialog.showModal();
+    if (!consentModalOpen && dialog.open) dialog.close();
+  }, [consentModalOpen]);
+
+  const openConsentModal = () => {
+    if (!formRef.current?.reportValidity()) return;
+    setConsentModalOpen(true);
+  };
+
+  const closeConsentModal = () => {
+    if (pending) return;
+    setConsentModalOpen(false);
+    setAccountCreationConsent(false);
+    setPersonalizationConsent(false);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (!registering) return;
+    if (!consentModalOpen) {
+      event.preventDefault();
+      openConsentModal();
+      return;
+    }
+    if (!accountCreationConsent) event.preventDefault();
+  };
+
+  const closeFromBackdrop = (event: MouseEvent<HTMLDialogElement>) => {
+    if (event.target === event.currentTarget) closeConsentModal();
+  };
+
   return (
-    <form action={formAction} className="card authForm">
+    <form
+      action={formAction}
+      className="card authForm"
+      onSubmit={handleSubmit}
+      ref={formRef}
+    >
       {registering && (
         <>
           <label>
@@ -94,27 +145,15 @@ export function AuthForm({
           type="password"
         />
       </label>
-      {registering && (
-        <div className="requiredConsent">
-          <label className="consentOption">
-            <input name="accountCreationConsent" required type="checkbox" />
-            <span>
-              <strong>[필수]</strong> 계정 생성 및 서비스 이용에 동의합니다.
-            </span>
-          </label>
-          <details className="consentDetails">
-            <summary>필수 동의 내용 보기</summary>
-            <ul>
-              <li>목적: 회원 계정 생성 및 로그인·회원 서비스 제공</li>
-              <li>처리 정보: 이메일, 사용자명, 생년월일, 성별 및 암호화된 인증정보</li>
-              <li>보유·이용 기간: 회원 탈퇴 시까지</li>
-            </ul>
-            <p>동의하지 않으면 계정을 생성할 수 없습니다.</p>
-          </details>
-        </div>
+      {state?.message && (!registering || !consentModalOpen) && (
+        <p className="formMessageText" role="alert">{state.message}</p>
       )}
-      {state?.message && <p className="formMessageText" role="alert">{state.message}</p>}
-      <button className="primaryButton" disabled={pending} type="submit">
+      <button
+        className="primaryButton"
+        disabled={pending}
+        onClick={registering ? openConsentModal : undefined}
+        type={registering ? "button" : "submit"}
+      >
         {pending ? "처리 중" : registering ? "계정 만들기" : "로그인"}
       </button>
       <p className="authSwitch">
@@ -123,6 +162,98 @@ export function AuthForm({
           {registering ? "로그인" : "회원가입"}
         </Link>
       </p>
+
+      {registering && (
+        <dialog
+          aria-labelledby="account-consent-title"
+          className="accountConsentModal"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeConsentModal();
+          }}
+          onClick={closeFromBackdrop}
+          ref={dialogRef}
+        >
+          <div className="accountConsentHeading">
+            <h2 id="account-consent-title">가입 동의</h2>
+            <p className="muted">
+              필수 동의와 선택 동의를 확인한 후 계정을 생성해 주세요.
+            </p>
+          </div>
+
+          <div className="accountConsentList">
+            <section className="accountConsentSection">
+              <label className="consentOption">
+                <input
+                  checked={accountCreationConsent}
+                  name="accountCreationConsent"
+                  onChange={(event) => setAccountCreationConsent(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  <strong>[필수]</strong> 계정 생성 및 서비스 이용에 동의합니다.
+                </span>
+              </label>
+              <details className="consentDetails">
+                <summary>필수 동의 내용 보기</summary>
+                <ul>
+                  <li>목적: 회원 계정 생성 및 로그인·회원 서비스 제공</li>
+                  <li>처리 정보: 이메일, 사용자명, 생년월일, 성별 및 암호화된 인증정보</li>
+                  <li>보유·이용 기간: 회원 탈퇴 시까지</li>
+                </ul>
+                <p>동의하지 않으면 계정을 생성할 수 없습니다.</p>
+              </details>
+            </section>
+
+            <section className="accountConsentSection">
+              <label className="consentOption">
+                <input
+                  checked={personalizationConsent}
+                  name="personalizationConsent"
+                  onChange={(event) => setPersonalizationConsent(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  <strong>[선택]</strong> 이용 기록을 활용한 맞춤형 관심 종목 제공에
+                  동의합니다.
+                </span>
+              </label>
+              <details className="consentDetails">
+                <summary>선택 동의 내용 보기</summary>
+                <ul>
+                  <li>목적: 사용자의 관심에 맞는 종목 탐색 정보 제공</li>
+                  <li>활용 기록: 검색어, 조회 종목, 관심종목 및 서비스 이용 기록</li>
+                  <li>보유·이용 기간: 동의 철회 또는 회원 탈퇴 시까지</li>
+                </ul>
+                <p>동의하지 않아도 계정 생성과 기본 기능 이용이 가능합니다.</p>
+              </details>
+            </section>
+          </div>
+
+          <div className="accountConsentActions">
+            {state?.message && (
+              <p className="formMessageText accountConsentMessage" role="alert">
+                {state.message}
+              </p>
+            )}
+            <button
+              className="accountTextButton"
+              disabled={pending}
+              onClick={closeConsentModal}
+              type="button"
+            >
+              취소
+            </button>
+            <button
+              className="primaryButton"
+              disabled={!accountCreationConsent || pending}
+              type="submit"
+            >
+              {pending ? "처리 중" : "동의하고 계정 만들기"}
+            </button>
+          </div>
+        </dialog>
+      )}
     </form>
   );
 }
