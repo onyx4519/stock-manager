@@ -5,12 +5,14 @@ from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
 from app.api import admin as admin_api
+from app.api import notifications as notifications_api
 from app.api import portfolio as portfolio_api
 from app.api import transactions as transactions_api
 from app.api import watchlist as watchlist_api
 from app.db import (
     AdminRepository,
     AuthRepository,
+    NotificationRepository,
     SQLiteDatabase,
     TransactionRepository,
     WatchlistRepository,
@@ -19,6 +21,7 @@ from app.main import app
 from app.providers.mock.market_provider import MockMarketProvider
 from app.services.auth_service import AuthService
 from app.services.market_service import MarketService
+from app.services.notification_service import NotificationService
 from app.services.portfolio_service import PortfolioService
 from app.services.transaction_service import TransactionService
 from app.services.watchlist_service import WatchlistService
@@ -480,6 +483,130 @@ def test_admin_dashboard_is_private_and_returns_service_summary(tmp_path):
         assert "password_hash" not in payload["recent_users"][0]
     finally:
         auth_api.service, admin_api.repository = originals
+
+
+def test_admin_can_publish_notices_and_manage_regular_user_security(tmp_path):
+    database = SQLiteDatabase(tmp_path / "admin-operations.db")
+    notification_repository = NotificationRepository(database)
+    auth_service = AuthService(AuthRepository(database), notification_repository)
+    originals = (
+        auth_api.service,
+        admin_api.repository,
+        notifications_api.service,
+    )
+    auth_api.service = auth_service
+    admin_api.repository = AdminRepository(database)
+    notifications_api.service = NotificationService(notification_repository)
+    client = TestClient(app)
+    try:
+        admin = auth_service.create_admin(
+            email="operations-admin@example.com",
+            display_name="Operations Admin",
+            password="strong-admin-password",
+        )
+        regular = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "operations-user@example.com",
+                "display_name": "Operations User",
+                "password": "safe-password",
+                "birth_date": "2000-01-01",
+                "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
+                "privacy_collection_consent": True,
+            },
+        )
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "operations-admin@example.com",
+                "password": "strong-admin-password",
+            },
+        )
+        regular_headers = {
+            "Authorization": f"Bearer {regular.json()['access_token']}"
+        }
+        admin_headers = {
+            "Authorization": f"Bearer {admin_login.json()['access_token']}"
+        }
+        regular_user_id = regular.json()["user"]["id"]
+
+        assert client.post(
+            "/api/v1/admin/notices",
+            json={"title": "금지", "message": "일반 사용자는 발행할 수 없습니다."},
+            headers=regular_headers,
+        ).status_code == 403
+        public_notice = client.post(
+            "/api/v1/admin/notices",
+            json={
+                "title": "서비스 점검 안내",
+                "message": "오늘 오후 서비스 점검이 예정되어 있습니다.",
+                "audience": "ALL",
+            },
+            headers=admin_headers,
+        )
+        private_notice = client.post(
+            "/api/v1/admin/notices",
+            json={
+                "title": "관리자 운영 안내",
+                "message": "관리자만 확인하는 운영 공지입니다.",
+                "audience": "ADMIN",
+            },
+            headers=admin_headers,
+        )
+        assert public_notice.status_code == 201
+        assert private_notice.status_code == 201
+        notices = client.get(
+            "/api/v1/admin/notices", headers=admin_headers
+        )
+        assert notices.status_code == 200
+        assert [item["audience"] for item in notices.json()] == ["ADMIN", "ALL"]
+
+        regular_notifications = client.get(
+            "/api/v1/notifications", headers=regular_headers
+        )
+        regular_titles = {
+            item["title"] for item in regular_notifications.json()["items"]
+        }
+        assert "서비스 점검 안내" in regular_titles
+        assert "관리자 운영 안내" not in regular_titles
+
+        force_change = client.post(
+            f"/api/v1/admin/users/{regular_user_id}/require-password-change",
+            headers=admin_headers,
+        )
+        assert force_change.status_code == 204
+        assert client.get(
+            "/api/v1/auth/me", headers=regular_headers
+        ).status_code == 401
+        relogin = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "operations-user@example.com",
+                "password": "safe-password",
+            },
+        )
+        assert relogin.json()["user"]["password_change_required"] is True
+        relogin_headers = {
+            "Authorization": f"Bearer {relogin.json()['access_token']}"
+        }
+        assert client.post(
+            f"/api/v1/admin/users/{regular_user_id}/revoke-sessions",
+            headers=admin_headers,
+        ).status_code == 204
+        assert client.get(
+            "/api/v1/auth/me", headers=relogin_headers
+        ).status_code == 401
+        assert client.post(
+            f"/api/v1/admin/users/{admin.id}/require-password-change",
+            headers=admin_headers,
+        ).status_code == 404
+    finally:
+        (
+            auth_api.service,
+            admin_api.repository,
+            notifications_api.service,
+        ) = originals
 
 
 def test_password_change_verifies_current_password_and_revokes_sessions(tmp_path):

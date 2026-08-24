@@ -1,5 +1,10 @@
-import { getAdminDashboard, getHealth } from "@/lib/api";
+import { AdminNoticeComposer } from "@/components/AdminNoticeComposer";
+import { getAdminDashboard, getAdminNotices, getHealth } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
+import {
+  requirePasswordChangeAction,
+  revokeSessionsAction,
+} from "./actions";
 
 
 export const dynamic = "force-dynamic";
@@ -28,9 +33,10 @@ function consentRate(count: number, total: number) {
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
-  const [summary, health] = await Promise.all([
+  const [summary, health, notices] = await Promise.all([
     getAdminDashboard(),
     getHealth().catch(() => null),
+    getAdminNotices(),
   ]);
 
   return (
@@ -115,6 +121,43 @@ export default async function AdminDashboardPage() {
         </article>
       </section>
 
+      <section className="adminDashboardGrid adminNoticeGrid">
+        <article className="card adminNoticeComposerCard">
+          <div className="eyebrow">Notice publisher</div>
+          <h2>공지 작성</h2>
+          <p className="muted adminSectionDescription">
+            전체 회원 또는 관리자에게 표시할 내부 알림센터 공지를 발행합니다.
+          </p>
+          <AdminNoticeComposer />
+        </article>
+
+        <article className="card adminNoticeHistoryCard">
+          <div className="rowBetween gap">
+            <div>
+              <div className="eyebrow">Published notices</div>
+              <h2>최근 발행 공지</h2>
+            </div>
+            <span className="countBadge">{notices.length}건</span>
+          </div>
+          {notices.length > 0 ? (
+            <ol className="adminNoticeList">
+              {notices.map((notice) => (
+                <li key={notice.id}>
+                  <div className="rowBetween gap">
+                    <strong>{notice.title}</strong>
+                    <span className={`adminAudience adminAudience-${notice.audience.toLowerCase()}`}>
+                      {notice.audience === "ALL" ? "전체 회원" : "관리자"}
+                    </span>
+                  </div>
+                  <p>{notice.message}</p>
+                  <time dateTime={notice.createdAt}>{formatDate(notice.createdAt)}</time>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="muted">관리자가 발행한 공지가 없습니다.</p>}
+        </article>
+      </section>
+
       <section className="adminDashboardGrid adminLowerGrid">
         <article className="card adminRecentUsersCard">
           <div className="eyebrow">Recent accounts</div>
@@ -122,13 +165,33 @@ export default async function AdminDashboardPage() {
           {summary.recentUsers.length > 0 ? (
             <div className="adminTableWrap">
               <table className="adminTable">
-                <thead><tr><th>사용자</th><th>권한</th><th>가입일</th></tr></thead>
+                <thead><tr><th>사용자</th><th>권한</th><th>보안 상태</th><th>세션</th><th>관리</th></tr></thead>
                 <tbody>
                   {summary.recentUsers.map((user) => (
                     <tr key={user.id}>
                       <td><strong>{user.displayName}</strong><small>{user.email}</small></td>
                       <td><span className={`adminRole adminRole-${user.role.toLowerCase()}`}>{user.role === "ADMIN" ? "관리자" : "일반"}</span></td>
-                      <td>{formatDate(user.createdAt)}</td>
+                      <td>
+                        <span className={user.passwordChangeRequired ? "adminAttention" : undefined}>
+                          {user.passwordChangeRequired ? "변경 필요" : "정상"}
+                        </span>
+                        <small>로그인 실패 {user.failedLoginAttempts}/5</small>
+                      </td>
+                      <td>{user.activeSessions}개</td>
+                      <td>
+                        {user.role === "USER" ? (
+                          <div className="adminUserActions">
+                            <form action={requirePasswordChangeAction}>
+                              <input type="hidden" name="userId" value={user.id} />
+                              <button type="submit">비밀번호 변경 요구</button>
+                            </form>
+                            <form action={revokeSessionsAction}>
+                              <input type="hidden" name="userId" value={user.id} />
+                              <button type="submit">세션 종료</button>
+                            </form>
+                          </div>
+                        ) : <span className="muted">보호됨</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,6 +1,7 @@
 from datetime import datetime
+from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.auth import AccountDeletionReason, UserRole
 
@@ -10,6 +11,36 @@ class AdminRecentUser(BaseModel):
     email: str
     display_name: str
     role: UserRole
+    active_sessions: int = 0
+    failed_login_attempts: int = 0
+    password_change_required: bool = False
+    created_at: datetime
+
+
+class AdminNoticeAudience(StrEnum):
+    ALL = "ALL"
+    ADMIN = "ADMIN"
+
+
+class AdminNoticeCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=80)
+    message: str = Field(min_length=2, max_length=500)
+    audience: AdminNoticeAudience = AdminNoticeAudience.ALL
+
+    @field_validator("title", "message")
+    @classmethod
+    def strip_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 2:
+            raise ValueError("Notice text must contain at least two characters.")
+        return normalized
+
+
+class AdminNotice(BaseModel):
+    id: int
+    title: str
+    message: str
+    audience: AdminNoticeAudience
     created_at: datetime
 
 

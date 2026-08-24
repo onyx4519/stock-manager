@@ -75,6 +75,19 @@ export type AdminRecentUser = {
   email: string;
   displayName: string;
   role: UserRole;
+  activeSessions: number;
+  failedLoginAttempts: number;
+  passwordChangeRequired: boolean;
+  createdAt: string;
+};
+
+export type AdminNoticeAudience = "ALL" | "ADMIN";
+
+export type AdminNotice = {
+  id: number;
+  title: string;
+  message: string;
+  audience: AdminNoticeAudience;
   createdAt: string;
 };
 

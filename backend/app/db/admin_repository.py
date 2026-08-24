@@ -1,9 +1,12 @@
+import uuid
 from datetime import datetime, timezone
 
 from app.db.database import SQLiteDatabase
 from app.schemas.admin import (
     AdminDashboardSummary,
     AdminDeletionReasonCount,
+    AdminNotice,
+    AdminNoticeCreate,
     AdminRecentUser,
 )
 
@@ -50,13 +53,21 @@ class AdminRepository:
             ).fetchone()[0]
             recent_users = connection.execute(
                 """
-                SELECT id, email, display_name, role, created_at
+                SELECT users.id, users.email, users.display_name, users.role,
+                       users.failed_login_attempts,
+                       users.password_change_required,
+                       users.created_at,
+                       COUNT(sessions.token_hash) AS active_sessions
                 FROM users
-                WHERE id != ?
-                ORDER BY created_at DESC, id DESC
+                LEFT JOIN sessions
+                  ON sessions.user_id = users.id
+                 AND sessions.expires_at > ?
+                WHERE users.id != ?
+                GROUP BY users.id
+                ORDER BY users.created_at DESC, users.id DESC
                 LIMIT 8
                 """,
-                (self.database.LEGACY_USER_ID,),
+                (now.isoformat(), self.database.LEGACY_USER_ID),
             ).fetchall()
             deletion_reasons = connection.execute(
                 """
@@ -91,3 +102,80 @@ class AdminRepository:
                 for row in deletion_reasons
             ],
         )
+
+    def create_notice(self, payload: AdminNoticeCreate) -> AdminNotice:
+        created_at = datetime.now(timezone.utc).isoformat()
+        with self.database.connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO notifications (
+                  notification_key, user_id, audience, category,
+                  title, message, created_at
+                ) VALUES (?, NULL, ?, 'NOTICE', ?, ?, ?)
+                """,
+                (
+                    f"admin:notice:{uuid.uuid4()}",
+                    payload.audience.value,
+                    payload.title,
+                    payload.message,
+                    created_at,
+                ),
+            )
+            row = connection.execute(
+                """
+                SELECT id, title, message, audience, created_at
+                FROM notifications WHERE id = ?
+                """,
+                (cursor.lastrowid,),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("Created notice could not be loaded.")
+        return AdminNotice.model_validate(dict(row))
+
+    def list_notices(self, limit: int = 20) -> list[AdminNotice]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, title, message, audience, created_at
+                FROM notifications
+                WHERE notification_key LIKE 'admin:notice:%'
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [AdminNotice.model_validate(dict(row)) for row in rows]
+
+    def require_password_change(self, user_id: str) -> bool:
+        with self.database.connection() as connection:
+            result = connection.execute(
+                """
+                UPDATE users
+                SET password_change_required = 1
+                WHERE id = ? AND id != ? AND role = 'USER'
+                """,
+                (user_id, self.database.LEGACY_USER_ID),
+            )
+            if result.rowcount == 1:
+                connection.execute(
+                    "DELETE FROM sessions WHERE user_id = ?",
+                    (user_id,),
+                )
+        return result.rowcount == 1
+
+    def revoke_sessions(self, user_id: str) -> bool:
+        with self.database.connection() as connection:
+            target = connection.execute(
+                """
+                SELECT 1 FROM users
+                WHERE id = ? AND id != ? AND role = 'USER'
+                """,
+                (user_id, self.database.LEGACY_USER_ID),
+            ).fetchone()
+            if target is None:
+                return False
+            connection.execute(
+                "DELETE FROM sessions WHERE user_id = ?",
+                (user_id,),
+            )
+        return True

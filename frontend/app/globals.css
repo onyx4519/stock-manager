@@ -204,8 +204,8 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .adminMetricCard > strong { font-size:28px; line-height:1; }
 .adminMetricCard > small { color:var(--muted); font-size:10px; line-height:1.4; }
 .adminDashboardGrid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:14px; }
-.adminOverviewCard, .adminServiceCard, .adminRecentUsersCard, .adminDeletionStatsCard { min-width:0; }
-.adminOverviewCard h2, .adminServiceCard h2, .adminRecentUsersCard h2, .adminDeletionStatsCard h2 { margin-bottom:14px; }
+.adminOverviewCard, .adminServiceCard, .adminRecentUsersCard, .adminDeletionStatsCard, .adminNoticeComposerCard, .adminNoticeHistoryCard { min-width:0; }
+.adminOverviewCard h2, .adminServiceCard h2, .adminRecentUsersCard h2, .adminDeletionStatsCard h2, .adminNoticeComposerCard h2, .adminNoticeHistoryCard h2 { margin-bottom:14px; }
 .adminOverviewList, .adminServiceDetails { display:grid; gap:0; margin:0; }
 .adminOverviewList > div, .adminServiceDetails > div { display:flex; align-items:center; justify-content:space-between; gap:18px; border-top:1px solid var(--border); padding:12px 0; }
 .adminOverviewList dt, .adminServiceDetails dt { color:var(--muted); font-size:12px; }
@@ -217,8 +217,24 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .adminStatusOk { background:var(--positive); box-shadow:0 0 0 4px color-mix(in srgb,var(--positive) 15%,transparent); }
 .adminServiceDetails { margin-top:12px; }
 .adminLowerGrid { grid-template-columns:minmax(0,1.5fr) minmax(260px,.5fr); }
+.adminNoticeGrid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.adminSectionDescription { margin:-4px 0 16px; font-size:12px; line-height:1.6; }
+.adminNoticeForm { display:grid; gap:14px; }
+.adminNoticeForm > label, .adminNoticeFormFooter label { display:grid; gap:7px; color:var(--muted); font-size:12px; }
+.adminNoticeForm input, .adminNoticeForm textarea, .adminNoticeForm select { width:100%; border:1px solid var(--border); border-radius:10px; padding:11px 12px; color:var(--text); background:var(--panel2); resize:vertical; }
+.adminNoticeForm input:focus, .adminNoticeForm textarea:focus, .adminNoticeForm select:focus { outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:1px; }
+.adminNoticeFormFooter { display:flex; align-items:end; justify-content:space-between; gap:14px; }
+.adminNoticeFormFooter label { width:min(220px,100%); }
+.adminNoticeList { display:grid; max-height:390px; margin:0; padding:0; overflow-y:auto; list-style:none; }
+.adminNoticeList li { display:grid; gap:7px; border-top:1px solid var(--border); padding:13px 0; }
+.adminNoticeList strong { font-size:13px; }
+.adminNoticeList p { margin:0; color:var(--muted); font-size:12px; line-height:1.55; white-space:pre-wrap; }
+.adminNoticeList time { color:var(--muted); font-size:10px; }
+.adminAudience { flex:0 0 auto; border-radius:999px; padding:4px 8px; font-size:9px; font-weight:700; }
+.adminAudience-all { color:var(--soft-blue-text); background:var(--soft-blue-bg); }
+.adminAudience-admin { color:var(--soft-purple-text); background:var(--soft-purple-bg); }
 .adminTableWrap { overflow-x:auto; }
-.adminTable { width:100%; min-width:570px; border-collapse:collapse; }
+.adminTable { width:100%; min-width:820px; border-collapse:collapse; }
 .adminTable th, .adminTable td { border-top:1px solid var(--border); padding:12px 10px; text-align:left; font-size:12px; }
 .adminTable th { color:var(--muted); font-size:10px; font-weight:600; }
 .adminTable th:last-child, .adminTable td:last-child { text-align:right; }
@@ -227,6 +243,9 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .adminRole { display:inline-flex; border-radius:999px; padding:4px 8px; font-size:10px; font-weight:700; }
 .adminRole-admin { color:var(--soft-purple-text); background:var(--soft-purple-bg); }
 .adminRole-user { color:var(--soft-blue-text); background:var(--soft-blue-bg); }
+.adminUserActions { display:flex; justify-content:flex-end; gap:6px; }
+.adminUserActions button { border:1px solid var(--border); border-radius:8px; padding:6px 8px; color:var(--text); background:var(--panel2); font-size:10px; cursor:pointer; }
+.adminUserActions button:hover { border-color:var(--hover-border); }
 .adminReasonList { display:grid; gap:0; margin:0; padding:0; list-style:none; }
 .adminReasonList li { display:flex; align-items:center; justify-content:space-between; gap:14px; border-top:1px solid var(--border); padding:12px 0; color:var(--muted); font-size:12px; }
 .adminReasonList strong { color:var(--text); }

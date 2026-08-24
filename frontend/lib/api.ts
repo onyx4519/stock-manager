@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 
 import type {
   AdminDashboardSummary,
+  AdminNotice,
+  AdminNoticeAudience,
   CurrencySummary,
   AuthSession,
   AuthUser,
@@ -91,12 +93,23 @@ type BackendAdminDashboardSummary = {
     email: string;
     display_name: string;
     role: UserRole;
+    active_sessions: number;
+    failed_login_attempts: number;
+    password_change_required: boolean;
     created_at: string;
   }>;
   deletion_reasons: Array<{
     reason: AdminDashboardSummary["deletionReasons"][number]["reason"];
     count: number;
   }>;
+};
+
+type BackendAdminNotice = {
+  id: number;
+  title: string;
+  message: string;
+  audience: AdminNoticeAudience;
+  created_at: string;
 };
 
 type BackendStockQuote = {
@@ -639,10 +652,56 @@ export async function getAdminDashboard(): Promise<AdminDashboardSummary> {
       email: user.email,
       displayName: user.display_name,
       role: user.role,
+      activeSessions: user.active_sessions,
+      failedLoginAttempts: user.failed_login_attempts,
+      passwordChangeRequired: user.password_change_required,
       createdAt: user.created_at,
     })),
     deletionReasons: result.deletion_reasons,
   };
+}
+
+export async function getAdminNotices(): Promise<AdminNotice[]> {
+  const result = await request<BackendAdminNotice[]>(`${API_BASE_URL}/admin/notices`);
+  return result.map((notice) => ({
+    id: notice.id,
+    title: notice.title,
+    message: notice.message,
+    audience: notice.audience,
+    createdAt: notice.created_at,
+  }));
+}
+
+export async function createAdminNotice(input: {
+  title: string;
+  message: string;
+  audience: AdminNoticeAudience;
+}): Promise<AdminNotice> {
+  const notice = await request<BackendAdminNotice>(`${API_BASE_URL}/admin/notices`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return {
+    id: notice.id,
+    title: notice.title,
+    message: notice.message,
+    audience: notice.audience,
+    createdAt: notice.created_at,
+  };
+}
+
+export async function requireUserPasswordChange(userId: string): Promise<void> {
+  return request<void>(
+    `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/require-password-change`,
+    { method: "POST" },
+  );
+}
+
+export async function revokeUserSessions(userId: string): Promise<void> {
+  return request<void>(
+    `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/revoke-sessions`,
+    { method: "POST" },
+  );
 }
 
 export async function getNotifications(): Promise<NotificationList> {
