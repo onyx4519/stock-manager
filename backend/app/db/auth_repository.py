@@ -14,6 +14,7 @@ class DuplicateUserError(ValueError):
 
 class AuthRepository:
     PASSWORD_ITERATIONS = 600_000
+    ACCOUNT_CREATION_CONSENT_VERSION = "2026-08-25-v1"
     PERSONALIZATION_CONSENT_VERSION = "2026-08-25-v1"
     SESSION_DAYS = 30
 
@@ -28,10 +29,17 @@ class AuthRepository:
         password: str,
         birth_date: date | None = None,
         gender: Gender = Gender.UNSPECIFIED,
+        account_creation_consent: bool = False,
         personalization_consent: bool = False,
     ) -> AuthUser:
         user_id = str(uuid.uuid4())
         created_at = datetime.now(timezone.utc).isoformat()
+        account_consented_at = created_at if account_creation_consent else None
+        account_consent_version = (
+            self.ACCOUNT_CREATION_CONSENT_VERSION
+            if account_creation_consent
+            else None
+        )
         consented_at = created_at if personalization_consent else None
         consent_version = (
             self.PERSONALIZATION_CONSENT_VERSION
@@ -50,9 +58,11 @@ class AuthRepository:
                     INSERT INTO users (
                       id, email, display_name, password_hash,
                       birth_date, gender,
+                      account_creation_consent_at,
+                      account_creation_consent_version,
                       personalization_consent, personalization_consent_at,
                       personalization_consent_version, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
@@ -61,6 +71,8 @@ class AuthRepository:
                         password_hash,
                         birth_date.isoformat() if birth_date is not None else None,
                         gender.value,
+                        account_consented_at,
+                        account_consent_version,
                         int(personalization_consent),
                         consented_at,
                         consent_version,

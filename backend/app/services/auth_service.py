@@ -23,6 +23,7 @@ class AuthService:
             password=payload.password,
             birth_date=payload.birth_date,
             gender=payload.gender,
+            account_creation_consent=payload.account_creation_consent,
             personalization_consent=payload.personalization_consent,
         )
         return self._create_session(user)

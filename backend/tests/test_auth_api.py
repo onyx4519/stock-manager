@@ -45,6 +45,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "password": "safe-password-1",
                 "birth_date": "2000-01-02",
                 "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
             },
         )
         second = client.post(
@@ -55,6 +56,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "password": "safe-password-2",
                 "birth_date": "1995-05-15",
                 "gender": "FEMALE",
+                "account_creation_consent": True,
                 "personalization_consent": True,
             },
         )
@@ -68,14 +70,24 @@ def test_authentication_and_user_data_isolation(tmp_path):
         assert second.json()["user"]["gender"] == "FEMALE"
         assert second.json()["user"]["personalization_consent_at"]
         with database.connection() as connection:
-            consent_version = connection.execute(
+            consent_record = connection.execute(
                 """
-                SELECT personalization_consent_version
+                SELECT account_creation_consent_at,
+                       account_creation_consent_version,
+                       personalization_consent_version
                 FROM users WHERE id = ?
                 """,
                 (second.json()["user"]["id"],),
-            ).fetchone()[0]
-        assert consent_version == AuthRepository.PERSONALIZATION_CONSENT_VERSION
+            ).fetchone()
+        assert consent_record["account_creation_consent_at"]
+        assert (
+            consent_record["account_creation_consent_version"]
+            == AuthRepository.ACCOUNT_CREATION_CONSENT_VERSION
+        )
+        assert (
+            consent_record["personalization_consent_version"]
+            == AuthRepository.PERSONALIZATION_CONSENT_VERSION
+        )
         first_headers = {
             "Authorization": f"Bearer {first.json()['access_token']}"
         }
@@ -123,6 +135,7 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
         "password": "safe-password",
         "birth_date": "2001-03-04",
         "gender": "MALE",
+        "account_creation_consent": True,
     }
     try:
         assert client.post("/api/v1/auth/register", json=payload).status_code == 201
@@ -147,6 +160,7 @@ def test_auth_rejects_invalid_basic_profile_values(tmp_path):
         "password": "safe-password",
         "birth_date": "2000-01-01",
         "gender": "UNSPECIFIED",
+        "account_creation_consent": True,
     }
     try:
         missing_birth_date = dict(base_payload)
@@ -163,6 +177,17 @@ def test_auth_rejects_invalid_basic_profile_values(tmp_path):
         invalid_gender = {**base_payload, "gender": "OTHER"}
         assert client.post(
             "/api/v1/auth/register", json=invalid_gender
+        ).status_code == 422
+
+        missing_consent = dict(base_payload)
+        missing_consent.pop("account_creation_consent")
+        assert client.post(
+            "/api/v1/auth/register", json=missing_consent
+        ).status_code == 422
+
+        declined_consent = {**base_payload, "account_creation_consent": False}
+        assert client.post(
+            "/api/v1/auth/register", json=declined_consent
         ).status_code == 422
     finally:
         auth_api.service = original
@@ -184,6 +209,7 @@ def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
                 "password": "safe-password",
                 "birth_date": "1999-12-31",
                 "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
             },
         )
         assert registration.status_code == 201
@@ -350,6 +376,8 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
         row = connection.execute(
             """
             SELECT birth_date, gender,
+                   account_creation_consent_at,
+                   account_creation_consent_version,
                    personalization_consent, personalization_consent_at,
                    personalization_consent_version
             FROM users WHERE id = 'existing-user'
@@ -367,6 +395,8 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
 
     assert row["birth_date"] is None
     assert row["gender"] == "UNSPECIFIED"
+    assert row["account_creation_consent_at"] is None
+    assert row["account_creation_consent_version"] is None
     assert row["personalization_consent"] == 0
     assert row["personalization_consent_at"] is None
     assert row["personalization_consent_version"] is None

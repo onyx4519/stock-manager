@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   birth_date TEXT,
   gender TEXT NOT NULL DEFAULT 'UNSPECIFIED'
     CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE')),
+  account_creation_consent_at TEXT,
+  account_creation_consent_version TEXT,
   personalization_consent INTEGER NOT NULL DEFAULT 0
     CHECK(personalization_consent IN (0, 1)),
   personalization_consent_at TEXT,

@@ -476,7 +476,7 @@ export async function registerUser(input: {
   password: string;
   birth_date: string;
   gender: Gender;
-  personalization_consent: boolean;
+  account_creation_consent: true;
 }): Promise<AuthSession> {
   const session = await request<BackendAuthSession>(`${API_BASE_URL}/auth/register`, {
     method: "POST",

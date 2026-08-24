@@ -31,6 +31,7 @@ class SQLiteDatabase:
                 connection.executescript(schema)
                 self._migrate_user_ownership(connection)
                 self._migrate_basic_profile(connection)
+                self._migrate_account_creation_consent(connection)
                 self._migrate_personalization_consent(connection)
                 self._migrate_account_deletion_feedback(connection)
                 connection.execute("PRAGMA optimize")
@@ -150,6 +151,22 @@ class SQLiteDatabase:
                 DEFAULT 'UNSPECIFIED'
                 CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE'))
                 """
+            )
+
+    @staticmethod
+    def _migrate_account_creation_consent(
+        connection: sqlite3.Connection,
+    ) -> None:
+        user_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info('users')")
+        }
+        if "account_creation_consent_at" not in user_columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN account_creation_consent_at TEXT"
+            )
+        if "account_creation_consent_version" not in user_columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN account_creation_consent_version TEXT"
             )
 
     @staticmethod

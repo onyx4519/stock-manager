@@ -30,6 +30,7 @@ class UserRegister(UserCredentials):
     display_name: str = Field(min_length=2, max_length=50)
     birth_date: date
     gender: Gender = Gender.UNSPECIFIED
+    account_creation_consent: Literal[True]
     personalization_consent: bool = False
 
     @field_validator("display_name")

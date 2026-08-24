@@ -86,13 +86,16 @@ export async function registerAction(
   const gender = genderValue === "MALE" || genderValue === "FEMALE"
     ? genderValue
     : "UNSPECIFIED";
+  if (formData.get("accountCreationConsent") !== "on") {
+    return { message: "계정 생성 및 서비스 이용에 동의해 주세요." };
+  }
   try {
     const session = await registerUser({
       ...credentials(formData),
       display_name: String(formData.get("displayName") ?? "").trim(),
       birth_date: birthDate,
       gender,
-      personalization_consent: formData.get("personalizationConsent") === "on",
+      account_creation_consent: true,
     });
     (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);
   } catch (error) {
