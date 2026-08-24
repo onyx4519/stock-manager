@@ -11,6 +11,7 @@ import {
   changePasswordAction,
   type PasswordChangeState,
 } from "@/app/account/actions";
+import { PasswordInput } from "@/components/PasswordInput";
 
 
 export function PasswordChangeForm({
@@ -29,15 +30,15 @@ export function PasswordChangeForm({
     <form action={action} className="passwordChangeForm">
       <label>
         현재 비밀번호
-        <input autoComplete="current-password" name="currentPassword" required type="password" />
+        <PasswordInput autoComplete="current-password" name="currentPassword" required />
       </label>
       <label>
         새 비밀번호
-        <input autoComplete="new-password" minLength={minimumLength} name="newPassword" required type="password" />
+        <PasswordInput autoComplete="new-password" minLength={minimumLength} name="newPassword" required />
       </label>
       <label>
         새 비밀번호 확인
-        <input autoComplete="new-password" minLength={minimumLength} name="newPasswordConfirmation" required type="password" />
+        <PasswordInput autoComplete="new-password" minLength={minimumLength} name="newPasswordConfirmation" required />
       </label>
       <p className="dataNotice">새 비밀번호는 {minimumLength}자 이상이어야 합니다.</p>
       {state?.message && <p className="formMessageText" role="alert">{state.message}</p>}

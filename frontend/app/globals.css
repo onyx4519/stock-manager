@@ -243,6 +243,15 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .passwordChangeForm label { display:grid; gap:7px; color:var(--muted); font-size:12px; }
 .passwordChangeForm input { width:100%; border:1px solid var(--border); border-radius:10px; padding:12px; color:var(--text); background:var(--panel2); }
 .passwordChangeForm input:focus { outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:1px; }
+.passwordInputField { position:relative; width:100%; }
+.passwordInputField input { padding-right:44px; }
+.passwordVisibilityButton { position:absolute; top:50%; right:7px; display:grid; place-items:center; width:34px; height:34px; padding:0; border:0; border-radius:8px; color:var(--muted); background:transparent; transform:translateY(-50%); cursor:pointer; }
+.passwordVisibilityButton:hover, .passwordVisibilityButton:focus-visible { color:var(--text); background:var(--panel); }
+.passwordVisibilityButton:focus-visible { outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent); outline-offset:1px; }
+.passwordEyeIcon { position:relative; display:block; width:18px; height:11px; border:1.5px solid currentColor; border-radius:50% / 65%; }
+.passwordEyeIcon::before { content:""; position:absolute; top:50%; left:50%; width:4px; height:4px; border:1.5px solid currentColor; border-radius:50%; transform:translate(-50%,-50%); }
+.passwordEyeIcon::after { content:""; position:absolute; top:50%; left:50%; width:22px; height:1.5px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%) rotate(-42deg); box-shadow:0 0 0 2px var(--panel2); }
+.passwordEyeIconOpen::after { display:none; }
 .forcedPasswordPage { width:min(560px,100%); margin:0 auto; padding-top:54px; }
 .forcedPasswordCard { display:grid; gap:18px; }
 .forcedPasswordCard h1 { margin-bottom:8px; }

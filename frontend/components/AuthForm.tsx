@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import type { AuthActionState } from "@/app/auth-actions";
+import { PasswordInput } from "@/components/PasswordInput";
 
 
 export function AuthForm({
@@ -141,12 +142,11 @@ export function AuthForm({
       </label>
       <label>
         비밀번호
-        <input
+        <PasswordInput
           autoComplete={registering ? "new-password" : "current-password"}
           minLength={8}
           name="password"
           required
-          type="password"
         />
       </label>
       {!registering && (
