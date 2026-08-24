@@ -15,6 +15,14 @@ class InvalidCredentialsError(ValueError):
     pass
 
 
+class InvalidCurrentPasswordError(ValueError):
+    pass
+
+
+class PasswordPolicyError(ValueError):
+    pass
+
+
 class AuthService:
     def __init__(
         self,
@@ -82,6 +90,26 @@ class AuthService:
     def logout(self, token: str) -> None:
         self.repository.delete_session(token)
 
+    def change_password(
+        self,
+        user: AuthUser,
+        current_password: str,
+        new_password: str,
+    ) -> None:
+        minimum_length = 12 if user.role == UserRole.ADMIN else 8
+        if len(new_password) < minimum_length:
+            raise PasswordPolicyError(
+                f"New password must contain at least {minimum_length} characters."
+            )
+        if current_password == new_password:
+            raise PasswordPolicyError("New password must be different.")
+        if not self.repository.change_password(
+            user.id,
+            current_password,
+            new_password,
+        ):
+            raise InvalidCurrentPasswordError("Current password is invalid.")
+
     def delete_account(self, user_id: str, reason: AccountDeletionReason) -> bool:
         return self.repository.delete_user(user_id, reason)
 
@@ -103,5 +131,7 @@ class AuthService:
 __all__ = [
     "AuthService",
     "DuplicateUserError",
+    "InvalidCurrentPasswordError",
     "InvalidCredentialsError",
+    "PasswordPolicyError",
 ]

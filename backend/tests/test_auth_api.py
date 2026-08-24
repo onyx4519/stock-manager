@@ -240,6 +240,97 @@ def test_admin_account_creation_and_server_side_permission_check(tmp_path):
         auth_api.service = original
 
 
+def test_password_change_verifies_current_password_and_revokes_sessions(tmp_path):
+    database = SQLiteDatabase(tmp_path / "password-change.db")
+    auth_service = AuthService(AuthRepository(database))
+    original = auth_api.service
+    auth_api.service = auth_service
+    client = TestClient(app)
+    try:
+        registration = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "password@example.com",
+                "display_name": "Password User",
+                "password": "safe-password",
+                "birth_date": "2000-01-01",
+                "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
+                "privacy_collection_consent": True,
+            },
+        )
+        assert registration.status_code == 201
+        first_headers = {
+            "Authorization": f"Bearer {registration.json()['access_token']}"
+        }
+        second_login = client.post(
+            "/api/v1/auth/login",
+            json={"email": "password@example.com", "password": "safe-password"},
+        )
+        second_headers = {
+            "Authorization": f"Bearer {second_login.json()['access_token']}"
+        }
+
+        wrong_current = client.patch(
+            "/api/v1/auth/password",
+            json={
+                "current_password": "wrong-password",
+                "new_password": "new-pass",
+            },
+            headers=first_headers,
+        )
+        assert wrong_current.status_code == 400
+        assert client.get("/api/v1/auth/me", headers=first_headers).status_code == 200
+
+        changed = client.patch(
+            "/api/v1/auth/password",
+            json={
+                "current_password": "safe-password",
+                "new_password": "new-pass",
+            },
+            headers=first_headers,
+        )
+        assert changed.status_code == 204
+        assert client.get("/api/v1/auth/me", headers=first_headers).status_code == 401
+        assert client.get("/api/v1/auth/me", headers=second_headers).status_code == 401
+        assert client.post(
+            "/api/v1/auth/login",
+            json={"email": "password@example.com", "password": "safe-password"},
+        ).status_code == 401
+        assert client.post(
+            "/api/v1/auth/login",
+            json={"email": "password@example.com", "password": "new-pass"},
+        ).status_code == 200
+
+        auth_service.create_admin(
+            email="password-admin@example.com",
+            display_name="Password Admin",
+            password="strong-admin-password",
+        )
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "password-admin@example.com",
+                "password": "strong-admin-password",
+            },
+        )
+        admin_headers = {
+            "Authorization": f"Bearer {admin_login.json()['access_token']}"
+        }
+        weak_admin_password = client.patch(
+            "/api/v1/auth/password",
+            json={
+                "current_password": "strong-admin-password",
+                "new_password": "new-pass",
+            },
+            headers=admin_headers,
+        )
+        assert weak_admin_password.status_code == 400
+        assert client.get("/api/v1/auth/me", headers=admin_headers).status_code == 200
+    finally:
+        auth_api.service = original
+
+
 def test_auth_rejects_invalid_basic_profile_values(tmp_path):
     database = SQLiteDatabase(tmp_path / "auth-profile-errors.db")
     original = auth_api.service

@@ -9,11 +9,17 @@ from app.schemas.auth import (
     AuthSession,
     AuthUser,
     NotificationPreferenceUpdate,
+    PasswordChangeRequest,
     UserCredentials,
     UserRegister,
     UserRole,
 )
-from app.services.auth_service import DuplicateUserError, InvalidCredentialsError
+from app.services.auth_service import (
+    DuplicateUserError,
+    InvalidCredentialsError,
+    InvalidCurrentPasswordError,
+    PasswordPolicyError,
+)
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -93,6 +99,29 @@ def update_notification_preference(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="Account not found.") from exc
+
+
+@router.patch("/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: PasswordChangeRequest,
+    user: Annotated[AuthUser, Depends(get_current_user)],
+) -> None:
+    try:
+        service.change_password(
+            user,
+            payload.current_password,
+            payload.new_password,
+        )
+    except InvalidCurrentPasswordError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is invalid.",
+        ) from exc
+    except PasswordPolicyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

@@ -565,6 +565,19 @@ export async function updateNotificationPreference(
   return normalizeAuthUser(user);
 }
 
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  return request<void>(`${API_BASE_URL}/auth/password`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      current_password: input.currentPassword,
+      new_password: input.newPassword,
+    }),
+  });
+}
+
 export async function getNotifications(): Promise<NotificationList> {
   const result = await request<BackendNotificationList>(`${API_BASE_URL}/notifications`);
   return {

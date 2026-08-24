@@ -208,6 +208,32 @@ class AuthRepository:
                 (self._token_hash(token),),
             )
 
+    def change_password(
+        self,
+        user_id: str,
+        current_password: str,
+        new_password: str,
+    ) -> bool:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT password_hash FROM users
+                WHERE id = ? AND id != ?
+                """,
+                (user_id, self.database.LEGACY_USER_ID),
+            ).fetchone()
+            if row is None or not self._verify_password(
+                current_password,
+                row["password_hash"],
+            ):
+                return False
+            connection.execute(
+                "UPDATE users SET password_hash = ? WHERE id = ?",
+                (self._hash_password(new_password), user_id),
+            )
+            connection.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+        return True
+
     def update_service_notification_consent(
         self,
         user_id: str,

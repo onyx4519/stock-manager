@@ -1,5 +1,6 @@
 import { DeleteAccountPanel } from "@/components/DeleteAccountPanel";
 import { NotificationSettingsForm } from "@/components/NotificationSettingsForm";
+import { PasswordChangePanel } from "@/components/PasswordChangePanel";
 import { requireCurrentUser } from "@/lib/auth";
 
 
@@ -70,6 +71,7 @@ export default async function AccountPage() {
             </dd>
           </div>
         </dl>
+        <PasswordChangePanel minimumLength={user.role === "ADMIN" ? 12 : 8} />
         <NotificationSettingsForm enabled={user.serviceNotificationConsent} />
         <DeleteAccountPanel userId={user.id} />
       </section>
