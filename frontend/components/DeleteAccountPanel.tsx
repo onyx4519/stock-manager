@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 
 
 const DELETION_REASONS = [
@@ -16,10 +16,19 @@ type DeletionStep = "idle" | "confirm" | "reason";
 
 
 export function DeleteAccountPanel({ userId }: { userId: string }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<DeletionStep>("idle");
   const [reason, setReason] = useState<DeletionReason | "">("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string>();
+  const expanded = step !== "idle";
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (expanded && !dialog.open) dialog.showModal();
+    if (!expanded && dialog.open) dialog.close();
+  }, [expanded]);
 
   const cancel = () => {
     setStep("idle");
@@ -64,15 +73,13 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
     }
   };
 
-  const expanded = step !== "idle";
+  const closeFromBackdrop = (event: MouseEvent<HTMLDialogElement>) => {
+    if (event.target === event.currentTarget && !pending) cancel();
+  };
 
   return (
-    <section
-      className={expanded
-        ? "accountDeletionArea accountDeletionExpanded"
-        : "accountDeletionArea"}
-    >
-      {step === "idle" && (
+    <>
+      <section className="accountDeletionArea">
         <button
           className="accountDeleteLink"
           onClick={() => setStep("confirm")}
@@ -80,77 +87,90 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
         >
           회원 탈퇴
         </button>
-      )}
+      </section>
 
-      {expanded && (
-        <div className="accountDeletionHeading">
-          <h2>회원 탈퇴</h2>
-          <p className="muted">
-            계정과 저장된 거래·관심종목 데이터가 삭제되며 복구할 수 없습니다.
-          </p>
-        </div>
-      )}
+      <dialog
+        aria-labelledby="account-deletion-title"
+        className="accountDeletionModal"
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!pending) cancel();
+        }}
+        onClick={closeFromBackdrop}
+        ref={dialogRef}
+      >
+        {expanded && (
+          <>
+            <div className="accountDeletionHeading">
+              <h2 id="account-deletion-title">회원 탈퇴</h2>
+              <p className="muted">
+                계정과 저장된 거래·관심종목 데이터가 삭제되며 복구할 수 없습니다.
+              </p>
+            </div>
 
-      {step === "confirm" && (
-        <div className="deletionStep" role="alert">
-          <strong>정말 회원 탈퇴에 동의하시나요?</strong>
-          <p>탈퇴를 계속하면 다음 단계에서 서비스의 부족했던 점을 선택합니다.</p>
-          <div className="deletionActions">
-            <button className="accountTextButton" onClick={cancel} type="button">
-              취소
-            </button>
-            <button
-              className="accountTextButton accountTextDanger"
-              onClick={() => setStep("reason")}
-              type="button"
-            >
-              동의하고 계속
-            </button>
-          </div>
-        </div>
-      )}
+            {step === "confirm" && (
+              <div className="deletionStep" role="alert">
+                <strong>정말 회원 탈퇴에 동의하시나요?</strong>
+                <p>탈퇴를 계속하면 다음 단계에서 서비스의 부족했던 점을 선택합니다.</p>
+                <div className="deletionActions">
+                  <button className="accountTextButton" onClick={cancel} type="button">
+                    취소
+                  </button>
+                  <button
+                    className="accountTextButton accountTextDanger"
+                    onClick={() => setStep("reason")}
+                    type="button"
+                  >
+                    동의하고 계속
+                  </button>
+                </div>
+              </div>
+            )}
 
-      {step === "reason" && (
-        <div className="deletionStep">
-          <fieldset className="deletionReasons">
-            <legend>가장 부족했던 점 한 가지를 선택해 주세요.</legend>
-            {DELETION_REASONS.map((item) => (
-              <label className="deletionReason" key={item.value}>
-                <input
-                  checked={reason === item.value}
-                  name="deletionReason"
-                  onChange={() => setReason(item.value)}
-                  type="radio"
-                  value={item.value}
-                />
-                <span>{item.label}</span>
-              </label>
-            ))}
-          </fieldset>
-          <p className="dataNotice">
-            선택한 사유는 계정 정보와 연결하지 않고 익명 통계로만 저장됩니다.
-          </p>
-          {message && <p className="formMessageText" role="alert">{message}</p>}
-          <div className="deletionActions">
-            <button
-              className="accountTextButton"
-              disabled={pending}
-              onClick={cancel}
-              type="button"
-            >
-              취소
-            </button>
-            <button
-              className="accountTextButton accountTextDanger"
-              disabled={!reason || pending}
-              onClick={submitDeletion}
-              type="button"
-            >
-              {pending ? "탈퇴 처리 중" : "사유 제출 후 계정 삭제"}
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
+            {step === "reason" && (
+              <div className="deletionStep">
+                <fieldset className="deletionReasons">
+                  <legend>가장 부족했던 점 한 가지를 선택해 주세요.</legend>
+                  {DELETION_REASONS.map((item) => (
+                    <label className="deletionReason" key={item.value}>
+                      <input
+                        checked={reason === item.value}
+                        name="deletionReason"
+                        onChange={() => setReason(item.value)}
+                        type="radio"
+                        value={item.value}
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                <p className="dataNotice">
+                  선택한 사유는 계정 정보와 연결하지 않고 익명 통계로만 저장됩니다.
+                </p>
+                {message && <p className="formMessageText" role="alert">{message}</p>}
+                <div className="deletionActions">
+                  <button
+                    className="accountTextButton"
+                    disabled={pending}
+                    onClick={cancel}
+                    type="button"
+                  >
+                    취소
+                  </button>
+                  <button
+                    className="accountTextButton accountTextDanger"
+                    disabled={!reason || pending}
+                    onClick={submitDeletion}
+                    type="button"
+                  >
+                    {pending ? "탈퇴 처리 중" : "사유 제출 후 계정 삭제"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </dialog>
+    </>
   );
 }
