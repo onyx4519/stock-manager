@@ -690,6 +690,12 @@ export async function createAdminNotice(input: {
   };
 }
 
+export async function deleteAdminNotice(noticeId: number): Promise<void> {
+  return request<void>(`${API_BASE_URL}/admin/notices/${noticeId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function requireUserPasswordChange(userId: string): Promise<void> {
   return request<void>(
     `${API_BASE_URL}/admin/users/${encodeURIComponent(userId)}/require-password-change`,

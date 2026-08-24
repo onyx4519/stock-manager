@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   ApiError,
   createAdminNotice,
+  deleteAdminNotice,
   requireUserPasswordChange,
   revokeUserSessions,
 } from "@/lib/api";
@@ -42,6 +43,16 @@ export async function publishAdminNoticeAction(
       success: false,
     };
   }
+}
+
+export async function deleteAdminNoticeAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const noticeId = Number(formData.get("noticeId"));
+  if (!Number.isSafeInteger(noticeId) || noticeId < 1) return;
+  await deleteAdminNotice(noticeId);
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/notifications");
 }
 
 function getUserId(formData: FormData): string | null {

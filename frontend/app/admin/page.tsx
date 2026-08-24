@@ -1,4 +1,5 @@
 import { AdminNoticeComposer } from "@/components/AdminNoticeComposer";
+import { AdminNoticeDeleteButton } from "@/components/AdminNoticeDeleteButton";
 import { getAdminDashboard, getAdminNotices, getHealth } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
 import {
@@ -150,7 +151,10 @@ export default async function AdminDashboardPage() {
                     </span>
                   </div>
                   <p>{notice.message}</p>
-                  <time dateTime={notice.createdAt}>{formatDate(notice.createdAt)}</time>
+                  <div className="adminNoticeMeta">
+                    <time dateTime={notice.createdAt}>{formatDate(notice.createdAt)}</time>
+                    <AdminNoticeDeleteButton noticeId={notice.id} noticeTitle={notice.title} />
+                  </div>
                 </li>
               ))}
             </ol>

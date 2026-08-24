@@ -562,6 +562,22 @@ def test_admin_can_publish_notices_and_manage_regular_user_security(tmp_path):
         assert notices.status_code == 200
         assert [item["audience"] for item in notices.json()] == ["ADMIN", "ALL"]
 
+        assert client.delete(
+            f"/api/v1/admin/notices/{public_notice.json()['id']}",
+            headers=regular_headers,
+        ).status_code == 403
+        with database.connection() as connection:
+            system_notice_id = connection.execute(
+                """
+                SELECT id FROM notifications
+                WHERE notification_key = 'system:notification-center-launched'
+                """
+            ).fetchone()["id"]
+        assert client.delete(
+            f"/api/v1/admin/notices/{system_notice_id}",
+            headers=admin_headers,
+        ).status_code == 404
+
         regular_notifications = client.get(
             "/api/v1/notifications", headers=regular_headers
         )
@@ -570,6 +586,17 @@ def test_admin_can_publish_notices_and_manage_regular_user_security(tmp_path):
         }
         assert "서비스 점검 안내" in regular_titles
         assert "관리자 운영 안내" not in regular_titles
+
+        assert client.delete(
+            f"/api/v1/admin/notices/{public_notice.json()['id']}",
+            headers=admin_headers,
+        ).status_code == 204
+        assert [
+            item["title"]
+            for item in client.get(
+                "/api/v1/admin/notices", headers=admin_headers
+            ).json()
+        ] == ["관리자 운영 안내"]
 
         force_change = client.post(
             f"/api/v1/admin/users/{regular_user_id}/require-password-change",

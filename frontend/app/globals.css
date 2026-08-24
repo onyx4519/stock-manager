@@ -230,6 +230,9 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .adminNoticeList strong { font-size:13px; }
 .adminNoticeList p { margin:0; color:var(--muted); font-size:12px; line-height:1.55; white-space:pre-wrap; }
 .adminNoticeList time { color:var(--muted); font-size:10px; }
+.adminNoticeMeta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.adminNoticeDeleteButton { border:0; padding:3px 5px; color:var(--negative); background:transparent; font-size:10px; cursor:pointer; }
+.adminNoticeDeleteButton:hover { text-decoration:underline; text-underline-offset:3px; }
 .adminAudience { flex:0 0 auto; border-radius:999px; padding:4px 8px; font-size:9px; font-weight:700; }
 .adminAudience-all { color:var(--soft-blue-text); background:var(--soft-blue-bg); }
 .adminAudience-admin { color:var(--soft-purple-text); background:var(--soft-purple-bg); }

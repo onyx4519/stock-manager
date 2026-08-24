@@ -146,6 +146,17 @@ class AdminRepository:
             ).fetchall()
         return [AdminNotice.model_validate(dict(row)) for row in rows]
 
+    def delete_notice(self, notice_id: int) -> bool:
+        with self.database.connection() as connection:
+            result = connection.execute(
+                """
+                DELETE FROM notifications
+                WHERE id = ? AND notification_key LIKE 'admin:notice:%'
+                """,
+                (notice_id,),
+            )
+        return result.rowcount == 1
+
     def require_password_change(self, user_id: str) -> bool:
         with self.database.connection() as connection:
             result = connection.execute(

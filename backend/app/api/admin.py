@@ -41,6 +41,18 @@ def create_notice(
     return repository.create_notice(payload)
 
 
+@router.delete(
+    "/notices/{notice_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_notice(
+    notice_id: int,
+    _admin: Annotated[AuthUser, Depends(get_current_admin)],
+) -> None:
+    if notice_id < 1 or not repository.delete_notice(notice_id):
+        raise HTTPException(status_code=404, detail="Published notice not found.")
+
+
 @router.post(
     "/users/{user_id}/require-password-change",
     status_code=status.HTTP_204_NO_CONTENT,
