@@ -79,6 +79,7 @@ DATABASE_PATH=data/stock_manager.db
 - `GET /api/v1/dart/companies/{stock_code}/disclosures`: 국내 종목 최근 공시
 - `GET /api/v1/dart/companies/{stock_code}/financials`: 국내 종목 주요 재무계정
 - `GET /api/v1/news?symbol={ticker}`: Massive 미국 종목 최신 뉴스
+- `GET /api/v1/analysis/companies/{stock_code}/financial-health`: OpenDART 공식 재무지표와 일반 재무 위험 신호
 
 원화와 달러 자산은 환율을 임의 적용하지 않고 KRW·USD별로 분리하여 표시합니다. 보유 수량을 초과하는 매도 거래는 저장하지 않습니다.
 
@@ -94,9 +95,8 @@ npm run dev
 
 ## 다음 구현 순서
 
-1. 재무비율·위험지표 분석 계층 확장
-2. 사용자 인증 및 다중 사용자 데이터 분리
-3. Supabase/PostgreSQL 전환 및 배포 환경 구성
+1. 사용자 인증 및 다중 사용자 데이터 분리
+2. Supabase/PostgreSQL 전환 및 배포 환경 구성
 
 ## 안전한 데이터 표시 원칙
 

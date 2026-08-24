@@ -25,6 +25,7 @@ class DartAPIError(DartProviderError):
 
 class DartProvider:
     BASE_URL = "https://opendart.fss.or.kr/api"
+    FINANCIAL_INDICATOR_CATEGORIES = ("M210000", "M220000", "M230000")
 
     def __init__(
         self,
@@ -195,6 +196,40 @@ class DartProvider:
             )
         return preferred_division, accounts
 
+    def get_financial_indicators(
+        self,
+        corp_code: str,
+        *,
+        business_year: int,
+        report_code: str = "11011",
+    ) -> list[dict]:
+        indicators: list[dict] = []
+        for category_code in self.FINANCIAL_INDICATOR_CATEGORIES:
+            payload = self._request_json(
+                "/fnlttSinglIndx.json",
+                params={
+                    "corp_code": corp_code,
+                    "bsns_year": str(business_year),
+                    "reprt_code": report_code,
+                    "idx_cl_code": category_code,
+                },
+                allow_no_data=True,
+            )
+            for row in self._list(payload):
+                indicators.append(
+                    {
+                        "report_code": self._required_text(row, "reprt_code"),
+                        "business_year": self._required_text(row, "bsns_year"),
+                        "corporation_code": self._required_text(row, "corp_code"),
+                        "stock_code": self._optional_text(row, "stock_code"),
+                        "settlement_date": self._optional_text(row, "stlm_dt"),
+                        "category_code": self._required_text(row, "idx_cl_code"),
+                        "indicator_code": self._required_text(row, "idx_code"),
+                        "value": self._indicator_value(row.get("idx_val")),
+                    }
+                )
+        return indicators
+
     def _request_json(
         self,
         path: str,
@@ -278,6 +313,20 @@ class DartProvider:
             return int(normalized)
         except ValueError as exc:
             raise DartAPIError("OpenDART amount is invalid.") from exc
+
+    @staticmethod
+    def _indicator_value(value: object) -> float | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, bool):
+            raise DartAPIError("OpenDART indicator value is invalid.")
+        normalized = str(value).strip().replace(",", "")
+        if not normalized or normalized in {"-", "N/A"} or "#" in normalized:
+            return None
+        try:
+            return float(normalized)
+        except ValueError as exc:
+            raise DartAPIError("OpenDART indicator value is invalid.") from exc
 
     @classmethod
     def _parse_corp_code_archive(

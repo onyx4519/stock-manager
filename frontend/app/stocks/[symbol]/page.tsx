@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ApiMessage } from "@/components/ApiMessage";
 import { DataBadge } from "@/components/DataBadge";
+import { FinancialAnalysisSection } from "@/components/FinancialAnalysisSection";
 import {
   DartDisclosureSection,
   DartFinancialSection,
@@ -12,6 +13,7 @@ import {
   ApiError,
   getDartDisclosures,
   getDartFinancials,
+  getFinancialHealthAnalysis,
   getNews,
   getQuote,
 } from "@/lib/api";
@@ -56,14 +58,23 @@ function dartErrorMessage(error: Error | null) {
   return "OpenDART 데이터를 불러오지 못했습니다.";
 }
 
+
+function analysisErrorMessage(error: Error | null) {
+  if (!error) return null;
+  if (error instanceof ApiError && error.status === 404) return "OpenDART 기업 정보를 찾을 수 없습니다.";
+  if (error instanceof ApiError && error.status === 503) return "OpenDART API 설정을 확인해 주세요.";
+  return "재무비율 분석 데이터를 불러오지 못했습니다.";
+}
+
 export default async function StockDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
   const isDomestic = /^\d{6}$/.test(symbol);
   const previousBusinessYear = new Date().getFullYear() - 1;
-  const [quoteResult, disclosuresResult, financialsResult, newsResult] = await Promise.all([
+  const [quoteResult, disclosuresResult, financialsResult, analysisResult, newsResult] = await Promise.all([
     capture(getStockQuote(symbol)),
     isDomestic ? capture(getDartDisclosures(symbol, 365, 10)) : Promise.resolve({ data: null, error: null }),
     isDomestic ? capture(getDartFinancials(symbol, previousBusinessYear, "11011")) : Promise.resolve({ data: null, error: null }),
+    isDomestic ? capture(getFinancialHealthAnalysis(symbol, previousBusinessYear)) : Promise.resolve({ data: null, error: null }),
     isDomestic ? Promise.resolve({ data: null, error: null }) : capture(getNews(symbol, 10)),
   ]);
 
@@ -81,6 +92,7 @@ export default async function StockDetailPage({ params }: { params: Promise<{ sy
       <div className="card companySummary"><h3>기업 정보</h3>{dartCompany ? <><strong>{dartCompany.corporationName}</strong>{dartCompany.corporationEnglishName && <p className="muted">{dartCompany.corporationEnglishName}</p>}<div className="meta">OpenDART 고유번호 {dartCompany.corporationCode}</div></> : <p className="muted">{isDomestic ? "OpenDART 기업 정보를 불러오지 못했습니다." : "미국 종목 기업정보는 향후 SEC·기업 IR 데이터로 연결합니다."}</p>}</div>
     </div>
     {isDomestic ? <>
+      <FinancialAnalysisSection data={analysisResult.data} error={analysisErrorMessage(analysisResult.error)} />
       <DartFinancialSection data={financialsResult.data} error={dartErrorMessage(financialsResult.error)} />
       <DartDisclosureSection data={disclosuresResult.data} error={dartErrorMessage(disclosuresResult.error)} />
     </> : <>

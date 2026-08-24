@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import dart, market, news, portfolio, stocks, transactions, watchlist
+from app.api import analysis, dart, market, news, portfolio, stocks, transactions, watchlist
 from app.core.config import settings
 from app.providers.market import MarketProviderConfigurationError, MarketProviderError
 
@@ -22,6 +22,7 @@ app.include_router(transactions.router, prefix=settings.api_prefix)
 app.include_router(watchlist.router, prefix=settings.api_prefix)
 app.include_router(dart.router, prefix=settings.api_prefix)
 app.include_router(news.router, prefix=settings.api_prefix)
+app.include_router(analysis.router, prefix=settings.api_prefix)
 
 
 @app.get("/health")

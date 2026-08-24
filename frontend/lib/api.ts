@@ -8,6 +8,10 @@ import type {
   DartFinancialAccount,
   DartFinancialStatement,
   DataStatus,
+  FinancialHealthAnalysis,
+  FinancialMetric,
+  FinancialRiskLevel,
+  MetricAssessment,
   NewsArticle,
   NewsFeed,
   PortfolioPosition,
@@ -162,6 +166,31 @@ type BackendNewsFeed = {
   symbols: string[];
   items: BackendNewsArticle[];
   total_count: number;
+};
+
+type BackendFinancialMetric = {
+  code: string;
+  name: string;
+  category: string;
+  value: number | null;
+  unit: string;
+  source: string;
+  is_risk_indicator: boolean;
+  assessment: MetricAssessment;
+  interpretation: string;
+};
+
+type BackendFinancialHealthAnalysis = {
+  company: BackendDartCompany;
+  business_year: string;
+  report_code: string;
+  settlement_date: string | null;
+  metrics: BackendFinancialMetric[];
+  financial_risk_score: number | null;
+  financial_risk_level: FinancialRiskLevel;
+  evaluated_indicators: number;
+  methodology: string;
+  warnings: string[];
 };
 
 export type BackendHealth = {
@@ -352,6 +381,20 @@ function normalizeNewsArticle(item: BackendNewsArticle): NewsArticle {
   };
 }
 
+function normalizeFinancialMetric(item: BackendFinancialMetric): FinancialMetric {
+  return {
+    code: item.code,
+    name: item.name,
+    category: item.category,
+    value: item.value,
+    unit: item.unit,
+    source: item.source,
+    isRiskIndicator: item.is_risk_indicator,
+    assessment: item.assessment,
+    interpretation: item.interpretation,
+  };
+}
+
 export async function getHealth(): Promise<BackendHealth> {
   const backendOrigin = new URL(API_BASE_URL).origin;
   return request<BackendHealth>(`${backendOrigin}/health`);
@@ -442,6 +485,29 @@ export async function getNews(symbol?: string, limit = 20): Promise<NewsFeed> {
     symbols: result.symbols,
     items: result.items.map(normalizeNewsArticle),
     totalCount: result.total_count,
+  };
+}
+
+export async function getFinancialHealthAnalysis(
+  stockCode: string,
+  businessYear = new Date().getFullYear() - 1,
+): Promise<FinancialHealthAnalysis> {
+  const url = new URL(
+    `${API_BASE_URL}/analysis/companies/${encodeURIComponent(stockCode)}/financial-health`,
+  );
+  url.searchParams.set("business_year", String(businessYear));
+  const result = await request<BackendFinancialHealthAnalysis>(url.toString());
+  return {
+    company: normalizeDartCompany(result.company),
+    businessYear: result.business_year,
+    reportCode: result.report_code,
+    settlementDate: result.settlement_date,
+    metrics: result.metrics.map(normalizeFinancialMetric),
+    financialRiskScore: result.financial_risk_score,
+    financialRiskLevel: result.financial_risk_level,
+    evaluatedIndicators: result.evaluated_indicators,
+    methodology: result.methodology,
+    warnings: result.warnings,
   };
 }
 

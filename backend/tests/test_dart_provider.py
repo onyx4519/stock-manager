@@ -190,3 +190,59 @@ def test_opendart_no_data_status_returns_an_empty_list():
     assert items == []
     assert provider._amount("-") is None
     assert provider._amount("(1,000)") == -1000
+
+
+class IndicatorClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def get(self, url: str, **kwargs) -> httpx.Response:
+        params = kwargs.get("params", {})
+        self.calls.append((url, params))
+        category = params["idx_cl_code"]
+        code_by_category = {
+            "M210000": "M211200",
+            "M220000": "M221100",
+            "M230000": "M231000",
+        }
+        value = "13.551" if category == "M210000" else "#########"
+        return httpx.Response(
+            200,
+            json={
+                "status": "000",
+                "message": "정상",
+                "list": [
+                    {
+                        "reprt_code": "11011",
+                        "bsns_year": "2025",
+                        "corp_code": "00126380",
+                        "stock_code": "005930",
+                        "stlm_dt": "2025-12-31",
+                        "idx_cl_code": category,
+                        "idx_code": code_by_category[category],
+                        "idx_val": value,
+                    }
+                ],
+            },
+            request=httpx.Request("GET", url),
+        )
+
+
+def test_financial_indicators_are_normalized_by_stable_codes():
+    client = IndicatorClient()
+    provider = DartProvider(api_key="test-key", client=client)
+
+    indicators = provider.get_financial_indicators(
+        "00126380",
+        business_year=2025,
+    )
+
+    assert len(indicators) == 3
+    assert indicators[0]["indicator_code"] == "M211200"
+    assert indicators[0]["value"] == 13.551
+    assert indicators[1]["value"] is None
+    assert {call[1]["idx_cl_code"] for call in client.calls} == {
+        "M210000",
+        "M220000",
+        "M230000",
+    }

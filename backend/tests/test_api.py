@@ -106,6 +106,29 @@ class StubDartProvider:
             }
         ]
 
+    def get_financial_indicators(self, corp_code, *, business_year, report_code):
+        assert corp_code == "00126380"
+        assert report_code == "11011"
+        values = {
+            "M211200": 13.551,
+            "M211550": 10.783,
+            "M221000": 76.96,
+            "M221100": 29.937,
+            "M221200": 232.761,
+            "M231000": 10.88,
+            "M231400": 33.231,
+            "M231800": 31.219,
+            "M233000": 10.186,
+        }
+        return [
+            {
+                "indicator_code": code,
+                "value": value,
+                "settlement_date": f"{business_year}-12-31",
+            }
+            for code, value in values.items()
+        ]
+
 
 class UnconfiguredDartProvider:
     def find_company(self, *, corp_name=None, stock_code=None):
@@ -177,6 +200,25 @@ def test_dart_disclosures_and_financials():
     assert financials.status_code == 200
     assert financials.json()["financial_statement_division"] == "CFS"
     assert financials.json()["accounts"][0]["current_term_amount"] == 300000
+
+
+def test_financial_health_analysis_endpoint():
+    app.dependency_overrides[get_dart_provider] = StubDartProvider
+    try:
+        response = client.get(
+            "/api/v1/analysis/companies/005930/financial-health?"
+            "business_year=2025"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["company"]["corp_name"] == "삼성전자"
+    assert data["financial_risk_score"] == 0.0
+    assert data["financial_risk_level"] == "LOW"
+    assert data["evaluated_indicators"] == 4
+    assert len(data["metrics"]) == 9
 
 
 class StubNewsProvider:

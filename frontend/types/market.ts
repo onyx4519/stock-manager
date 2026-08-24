@@ -97,6 +97,40 @@ export type NewsFeed = {
   totalCount: number;
 };
 
+export type MetricAssessment =
+  | "HEALTHY"
+  | "WATCH"
+  | "CAUTION"
+  | "NOT_EVALUATED"
+  | "UNAVAILABLE";
+
+export type FinancialRiskLevel = "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
+
+export type FinancialMetric = {
+  code: string;
+  name: string;
+  category: string;
+  value: number | null;
+  unit: string;
+  source: string;
+  isRiskIndicator: boolean;
+  assessment: MetricAssessment;
+  interpretation: string;
+};
+
+export type FinancialHealthAnalysis = {
+  company: DartCompany;
+  businessYear: string;
+  reportCode: string;
+  settlementDate: string | null;
+  metrics: FinancialMetric[];
+  financialRiskScore: number | null;
+  financialRiskLevel: FinancialRiskLevel;
+  evaluatedIndicators: number;
+  methodology: string;
+  warnings: string[];
+};
+
 export type PortfolioPosition = {
   symbol: string;
   companyName: string;
