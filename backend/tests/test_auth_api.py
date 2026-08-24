@@ -110,6 +110,100 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
         auth_api.service = original
 
 
+def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
+    tmp_path,
+):
+    database = SQLiteDatabase(tmp_path / "account-deletion.db")
+    original = auth_api.service
+    auth_api.service = AuthService(AuthRepository(database))
+    client = TestClient(app)
+    try:
+        registration = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "leaving@example.com",
+                "display_name": "Leaving User",
+                "password": "safe-password",
+            },
+        )
+        assert registration.status_code == 201
+        session = registration.json()
+        user_id = session["user"]["id"]
+        headers = {"Authorization": f"Bearer {session['access_token']}"}
+
+        with database.connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO transactions (
+                  user_id, symbol, transaction_type, quantity, price, currency,
+                  fee, tax, executed_at, created_at, updated_at
+                ) VALUES (?, 'NVDA', 'BUY', '1', '100', 'USD', '0', '0', ?, ?, ?)
+                """,
+                (
+                    user_id,
+                    "2026-08-25T00:00:00+00:00",
+                    "2026-08-25T00:00:00+00:00",
+                    "2026-08-25T00:00:00+00:00",
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO watchlist_items (
+                  user_id, symbol, company_name, currency, created_at
+                ) VALUES (?, 'NVDA', 'NVIDIA Corporation', 'USD', ?)
+                """,
+                (user_id, "2026-08-25T00:00:00+00:00"),
+            )
+
+        not_confirmed = client.request(
+            "DELETE",
+            "/api/v1/auth/account",
+            json={"confirmed": False, "reason": "MISSING_CONTENT"},
+            headers=headers,
+        )
+        assert not_confirmed.status_code == 422
+        assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+
+        deleted = client.request(
+            "DELETE",
+            "/api/v1/auth/account",
+            json={"confirmed": True, "reason": "MISSING_CONTENT"},
+            headers=headers,
+        )
+        assert deleted.status_code == 204
+        assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
+
+        with database.connection() as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM users WHERE id = ?", (user_id,)
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT COUNT(*) FROM sessions WHERE user_id = ?", (user_id,)
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT COUNT(*) FROM transactions WHERE user_id = ?", (user_id,)
+            ).fetchone()[0] == 0
+            assert connection.execute(
+                "SELECT COUNT(*) FROM watchlist_items WHERE user_id = ?", (user_id,)
+            ).fetchone()[0] == 0
+            feedback = connection.execute(
+                "SELECT reason, created_at FROM account_deletion_feedback"
+            ).fetchone()
+            columns = {
+                row["name"]
+                for row in connection.execute(
+                    "PRAGMA table_info('account_deletion_feedback')"
+                )
+            }
+
+        assert feedback["reason"] == "MISSING_CONTENT"
+        assert feedback["created_at"]
+        assert "user_id" not in columns
+        assert "email" not in columns
+    finally:
+        auth_api.service = original
+
+
 def test_legacy_records_are_preserved_and_claimed_by_first_user(tmp_path):
     path = tmp_path / "legacy.db"
     with sqlite3.connect(path) as connection:

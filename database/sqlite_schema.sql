@@ -16,6 +16,18 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_expires
 ON sessions(user_id, expires_at);
 
+CREATE TABLE IF NOT EXISTS account_deletion_feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reason TEXT NOT NULL CHECK(reason IN (
+    'MISSING_CONTENT',
+    'DIFFICULT_TO_USE',
+    'DATA_QUALITY',
+    'PRIVACY_CONCERN',
+    'NO_LONGER_NEEDED'
+  )),
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from app.db.database import SQLiteDatabase
-from app.schemas.auth import AuthUser
+from app.schemas.auth import AccountDeletionReason, AuthUser
 
 
 class DuplicateUserError(ValueError):
@@ -125,6 +125,24 @@ class AuthRepository:
                 "DELETE FROM sessions WHERE token_hash = ?",
                 (self._token_hash(token),),
             )
+
+    def delete_user(self, user_id: str, reason: AccountDeletionReason) -> bool:
+        deleted_at = datetime.now(timezone.utc).isoformat()
+        with self.database.connection() as connection:
+            result = connection.execute(
+                "DELETE FROM users WHERE id = ? AND id != ?",
+                (user_id, self.database.LEGACY_USER_ID),
+            )
+            if result.rowcount != 1:
+                return False
+            connection.execute(
+                """
+                INSERT INTO account_deletion_feedback (reason, created_at)
+                VALUES (?, ?)
+                """,
+                (reason.value, deleted_at),
+            )
+        return True
 
     @classmethod
     def _hash_password(cls, password: str) -> str:

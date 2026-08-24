@@ -498,6 +498,21 @@ export async function logoutUser(): Promise<void> {
   return request<void>(`${API_BASE_URL}/auth/logout`, { method: "POST" });
 }
 
+export async function deleteAccount(input: {
+  confirmed: true;
+  reason:
+    | "MISSING_CONTENT"
+    | "DIFFICULT_TO_USE"
+    | "DATA_QUALITY"
+    | "PRIVACY_CONCERN"
+    | "NO_LONGER_NEEDED";
+}): Promise<void> {
+  return request<void>(`${API_BASE_URL}/auth/account`, {
+    method: "DELETE",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function getQuotes(): Promise<StockQuote[]> {
   const quotes = await request<BackendStockQuote[]>(`${API_BASE_URL}/market/quotes`);
   return quotes.map(normalizeQuote);

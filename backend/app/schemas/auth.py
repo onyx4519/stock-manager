@@ -1,4 +1,6 @@
 from datetime import datetime
+from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -41,3 +43,16 @@ class AuthSession(BaseModel):
     token_type: str = "bearer"
     expires_at: datetime
     user: AuthUser
+
+
+class AccountDeletionReason(StrEnum):
+    MISSING_CONTENT = "MISSING_CONTENT"
+    DIFFICULT_TO_USE = "DIFFICULT_TO_USE"
+    DATA_QUALITY = "DATA_QUALITY"
+    PRIVACY_CONCERN = "PRIVACY_CONCERN"
+    NO_LONGER_NEEDED = "NO_LONGER_NEEDED"
+
+
+class AccountDeletionRequest(BaseModel):
+    confirmed: Literal[True]
+    reason: AccountDeletionReason

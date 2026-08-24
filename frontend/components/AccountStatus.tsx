@@ -8,7 +8,9 @@ export async function AccountStatus() {
   if (!user) return <Link className="accountLink" href="/login">로그인</Link>;
   return (
     <div className="accountStatus">
-      <span>{user.displayName}</span>
+      <Link className="accountNameLink" href="/account">
+        {user.displayName}
+      </Link>
       <form action={logoutAction}>
         <button className="accountButton" type="submit">로그아웃</button>
       </form>

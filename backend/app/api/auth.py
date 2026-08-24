@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.dependencies import auth_service as service
-from app.schemas.auth import AuthSession, AuthUser, UserCredentials, UserRegister
+from app.schemas.auth import (
+    AccountDeletionRequest,
+    AuthSession,
+    AuthUser,
+    UserCredentials,
+    UserRegister,
+)
 from app.services.auth_service import DuplicateUserError, InvalidCredentialsError
 
 
@@ -60,3 +66,12 @@ def me(user: Annotated[AuthUser, Depends(get_current_user)]) -> AuthUser:
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(token: Annotated[str, Depends(get_session_token)]) -> None:
     service.logout(token)
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    payload: AccountDeletionRequest,
+    user: Annotated[AuthUser, Depends(get_current_user)],
+) -> None:
+    if not service.delete_account(user.id, payload.reason):
+        raise HTTPException(status_code=404, detail="Account not found.")

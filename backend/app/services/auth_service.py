@@ -1,5 +1,11 @@
 from app.db.auth_repository import AuthRepository, DuplicateUserError
-from app.schemas.auth import AuthSession, AuthUser, UserCredentials, UserRegister
+from app.schemas.auth import (
+    AccountDeletionReason,
+    AuthSession,
+    AuthUser,
+    UserCredentials,
+    UserRegister,
+)
 
 
 class InvalidCredentialsError(ValueError):
@@ -29,6 +35,9 @@ class AuthService:
 
     def logout(self, token: str) -> None:
         self.repository.delete_session(token)
+
+    def delete_account(self, user_id: str, reason: AccountDeletionReason) -> bool:
+        return self.repository.delete_user(user_id, reason)
 
     def _create_session(self, user: AuthUser) -> AuthSession:
         token, expires_at = self.repository.create_session(user.id)

@@ -18,7 +18,7 @@ export function AuthForm({
     <form action={formAction} className="card authForm">
       {registering && (
         <label>
-          표시 이름
+          사용자명
           <input autoComplete="name" minLength={2} name="displayName" required />
         </label>
       )}
