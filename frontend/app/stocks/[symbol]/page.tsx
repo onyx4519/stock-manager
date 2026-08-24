@@ -9,8 +9,10 @@ import {
   DartFinancialSection,
 } from "@/components/DartSections";
 import { NewsSection } from "@/components/NewsSections";
+import { RecentStockTracker } from "@/components/RecentStocks";
 import {
   ApiError,
+  getCurrentUser,
   getDartDisclosures,
   getDartFinancials,
   getFinancialHealthAnalysis,
@@ -70,7 +72,8 @@ export default async function StockDetailPage({ params }: { params: Promise<{ sy
   const { symbol } = await params;
   const isDomestic = /^\d{6}$/.test(symbol);
   const previousBusinessYear = new Date().getFullYear() - 1;
-  const [quoteResult, disclosuresResult, financialsResult, analysisResult, newsResult] = await Promise.all([
+  const [currentUser, quoteResult, disclosuresResult, financialsResult, analysisResult, newsResult] = await Promise.all([
+    getCurrentUser().catch(() => null),
     capture(getStockQuote(symbol)),
     isDomestic ? capture(getDartDisclosures(symbol, 365, 10)) : Promise.resolve({ data: null, error: null }),
     isDomestic ? capture(getDartFinancials(symbol, previousBusinessYear, "11011")) : Promise.resolve({ data: null, error: null }),
@@ -86,6 +89,7 @@ export default async function StockDetailPage({ params }: { params: Promise<{ sy
   const dartCompany = disclosuresResult.data?.company ?? financialsResult.data?.company ?? null;
 
   return <div className="page">
+    {currentUser && <RecentStockTracker companyName={quote.companyName} currency={quote.currency} symbol={quote.symbol} userId={currentUser.id} />}
     <div className="pageHeader"><div><div className="eyebrow">{quote.symbol}</div><h1>{quote.companyName}</h1></div><DataBadge status={quote.dataStatus}/></div>
     <div className="grid2">
       <div className="card"><div className="muted">현재가</div><div className="price">{quote.price.toLocaleString("ko-KR")} {quote.currency}</div><div className="meta">{new Date(quote.timestamp).toLocaleString("ko-KR")} · {quote.provider}</div></div>

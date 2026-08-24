@@ -1,4 +1,5 @@
 import { ApiMessage } from "@/components/ApiMessage";
+import { RecentStocks } from "@/components/RecentStocks";
 import { StockSearchResults } from "@/components/StockSearchResults";
 import { getCurrentUser, getWatchlist, searchStocks } from "@/lib/api";
 
@@ -46,6 +47,8 @@ export default async function StocksPage({
           <button className="primaryButton" type="submit">검색</button>
         </div>
       </form>
+
+      {currentUser && <RecentStocks userId={currentUser.id} />}
 
       <section>
         <div className="rowBetween gap sectionTitleRow">
