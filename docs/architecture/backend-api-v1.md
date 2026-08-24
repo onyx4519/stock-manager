@@ -22,6 +22,12 @@ Base URL: `/api/v1`
 
 The POST endpoint currently validates the request contract only. It does not pretend to persist data before PostgreSQL/Supabase is connected.
 
+## OpenDART
+- `GET /api/v1/dart/companies/search?stock_code={six-digit-code}`
+- `GET /api/v1/dart/companies/search?corp_name={exact-name}`
+
+The corporation-code archive is fetched through the backend and cached in memory. The API returns `503` when `DART_API_KEY` is missing, `502` for upstream or response errors, and `404` when no exact match exists.
+
 ## Design rules
 1. Frontend never calls market vendors directly.
 2. Provider responses are normalized before UI use.

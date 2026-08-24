@@ -10,8 +10,25 @@ ENV_FILE = BASE_DIR / ".env"
 load_dotenv(ENV_FILE)
 
 
+def _read_bool(name: str, *, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+
+    raise ValueError(f"{name} must be a boolean value.")
+
+
 class Settings:
-    def __init__(self):
+    def __init__(self) -> None:
+        self.app_name = os.getenv("APP_NAME", "Stock Manager API")
+        self.api_prefix = os.getenv("API_PREFIX", "/api/v1")
+        self.mock_mode = _read_bool("MOCK_MODE", default=True)
         self.kis_app_key = os.getenv("KIS_APP_KEY", "")
         self.kis_app_secret = os.getenv("KIS_APP_SECRET", "")
         self.dart_api_key = os.getenv("DART_API_KEY", "")
