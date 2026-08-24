@@ -5,7 +5,9 @@ a { color:inherit; text-decoration:none; }
 button, input, select { font:inherit; }
 .appShell { min-height:100vh; display:grid; grid-template-columns:220px minmax(0,1fr); }
 .sidebar { border-right:1px solid var(--border); padding:24px 16px; position:sticky; top:0; height:100vh; background:#0e1115; }
-.brand { font-weight:800; font-size:18px; margin-bottom:24px; }
+.brand { display:block; font-weight:800; font-size:18px; margin-bottom:24px; }
+.brand:hover { color:var(--accent); }
+.brand:focus-visible { border-radius:5px; outline:2px solid var(--accent); outline-offset:4px; }
 .sidebar nav { display:grid; gap:6px; }
 .navItem { padding:10px 12px; border-radius:10px; color:var(--muted); }
 .navItem:hover { background:var(--panel); color:var(--text); }
