@@ -5,15 +5,6 @@ import { useActionState } from "react";
 import type { AuthActionState } from "@/app/auth-actions";
 
 
-function todayInKorea() {
-  return new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-  }).format(new Date());
-}
-
 export function AuthForm({
   action,
   mode,
@@ -31,16 +22,51 @@ export function AuthForm({
             사용자명
             <input autoComplete="name" minLength={2} name="displayName" required />
           </label>
-          <label>
-            생년월일
-            <input
-              max={todayInKorea()}
-              min="1900-01-01"
-              name="birthDate"
-              required
-              type="date"
-            />
-          </label>
+          <fieldset className="birthDateField">
+            <legend>생년월일</legend>
+            <div className="birthDateInputs">
+              <label>
+                <span>연도</span>
+                <input
+                  autoComplete="bday-year"
+                  inputMode="numeric"
+                  maxLength={4}
+                  name="birthYear"
+                  pattern="[0-9]{4}"
+                  placeholder="YYYY"
+                  required
+                  type="text"
+                />
+              </label>
+              <label>
+                <span>월</span>
+                <select
+                  autoComplete="bday-month"
+                  defaultValue=""
+                  name="birthMonth"
+                  required
+                >
+                  <option disabled value="">월 선택</option>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                    <option key={month} value={month}>{month}월</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>일</span>
+                <input
+                  autoComplete="bday-day"
+                  inputMode="numeric"
+                  maxLength={2}
+                  name="birthDay"
+                  pattern="[0-9]{1,2}"
+                  placeholder="DD"
+                  required
+                  type="text"
+                />
+              </label>
+            </div>
+          </fieldset>
           <label>
             성별
             <select defaultValue="UNSPECIFIED" name="gender">

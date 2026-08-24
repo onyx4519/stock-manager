@@ -37,6 +37,24 @@ function todayInKorea() {
   }).format(new Date());
 }
 
+function birthDateFrom(formData: FormData) {
+  const year = String(formData.get("birthYear") ?? "").trim();
+  const month = String(formData.get("birthMonth") ?? "").trim();
+  const day = String(formData.get("birthDay") ?? "").trim();
+  if (!/^\d{4}$/.test(year) || !/^([1-9]|1[0-2])$/.test(month)) return null;
+  if (!/^([1-9]|[12]\d|3[01])$/.test(day)) return null;
+
+  const birthDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const parsed = new Date(`${birthDate}T00:00:00Z`);
+  if (
+    parsed.getUTCFullYear() !== Number(year)
+    || parsed.getUTCMonth() + 1 !== Number(month)
+    || parsed.getUTCDate() !== Number(day)
+  ) return null;
+  if (birthDate < "1900-01-01" || birthDate > todayInKorea()) return null;
+  return birthDate;
+}
+
 export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
@@ -60,8 +78,8 @@ export async function registerAction(
 ): Promise<AuthActionState> {
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { message: "비밀번호는 8자 이상이어야 합니다." };
-  const birthDate = String(formData.get("birthDate") ?? "");
-  if (birthDate < "1900-01-01" || birthDate > todayInKorea()) {
+  const birthDate = birthDateFrom(formData);
+  if (birthDate === null) {
     return { message: "생년월일을 올바르게 입력해 주세요." };
   }
   const genderValue = String(formData.get("gender") ?? "UNSPECIFIED");

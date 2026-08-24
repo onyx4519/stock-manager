@@ -164,6 +164,11 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .authForm label { display:grid; gap:7px; color:var(--muted); font-size:12px; }
 .authForm input, .authForm select { width:100%; border:1px solid var(--border); background:var(--panel2); color:var(--text); border-radius:10px; padding:12px; }
 .authForm input:focus, .authForm select:focus { outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:1px; }
+.birthDateField { min-width:0; margin:0; padding:0; border:0; }
+.birthDateField legend { margin-bottom:7px; padding:0; color:var(--muted); font-size:12px; }
+.birthDateInputs { display:grid; grid-template-columns:1.15fr 1fr .85fr; gap:10px; }
+.authForm .birthDateInputs label { min-width:0; gap:6px; }
+.birthDateInputs label span { color:var(--muted); font-size:11px; }
 .profileDataNotice { color:var(--muted); font-size:11px; margin:-6px 0 0; }
 .optionalConsent { display:grid; gap:9px; border-top:1px solid var(--border); padding-top:15px; }
 .authForm .consentOption { display:flex; align-items:flex-start; gap:10px; color:var(--text); line-height:1.5; cursor:pointer; }
