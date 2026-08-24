@@ -54,6 +54,7 @@ button, input, select { font:inherit; }
 .accountNameLink, .accountDeleteLink, .accountTextButton { color:var(--text); padding:4px; }
 .accountNameLink:hover, .accountDeleteLink:hover, .accountTextButton:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .accountDeleteLink, .accountTextButton { border:0; background:transparent; font-size:12px; cursor:pointer; }
+.accountDeleteLink, .accountDeleteLink:hover { color:var(--negative); }
 .accountTextDanger { color:var(--negative); }
 .accountButton { border:0; background:transparent; padding:4px; cursor:pointer; }
 .search { width:100%; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:12px; padding:11px 14px; }
