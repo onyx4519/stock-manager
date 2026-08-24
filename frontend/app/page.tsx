@@ -1,18 +1,29 @@
 import { QuoteCard } from "@/components/QuoteCard";
-import { mockPortfolio, mockQuotes } from "@/lib/mockData";
+import { ApiMessage } from "@/components/ApiMessage";
+import { getQuotes } from "@/lib/api";
+import { mockPortfolio } from "@/lib/mockPortfolio";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const quoteResult = await getQuotes()
+    .then((quotes) => ({ quotes, error: null }))
+    .catch((error: Error) => ({ quotes: [], error: error.message }));
   const totalPnl = mockPortfolio.reduce((sum, item) => sum + item.unrealizedPnl, 0);
   return (
     <div className="page">
       <div className="pageHeader">
         <div><div className="eyebrow">Dashboard</div><h1>오늘의 투자 현황</h1></div>
-        <p className="muted">현재 화면의 숫자는 기능 검증용 Mock 데이터입니다.</p>
+        <p className="muted">시세는 백엔드 Provider 기준이며 포트폴리오는 아직 Mock 데이터입니다.</p>
       </div>
 
       <section>
         <h2>시장·관심 시세</h2>
-        <div className="grid2">{mockQuotes.map(q => <QuoteCard key={q.symbol} quote={q} />)}</div>
+        {quoteResult.error ? (
+          <ApiMessage title="시세를 불러오지 못했습니다" message={quoteResult.error} />
+        ) : quoteResult.quotes.length === 0 ? (
+          <ApiMessage title="표시할 시세가 없습니다" message="MASSIVE_SYMBOLS 설정을 확인해 주세요." />
+        ) : (
+          <div className="grid2">{quoteResult.quotes.map(q => <QuoteCard key={q.symbol} quote={q} />)}</div>
+        )}
       </section>
 
       <section>
@@ -20,7 +31,7 @@ export default function DashboardPage() {
         <div className="statsGrid">
           <div className="card stat"><span className="muted">보유 종목</span><strong>{mockPortfolio.length}</strong></div>
           <div className="card stat"><span className="muted">미실현 손익(통화 혼합 예시)</span><strong>{totalPnl.toLocaleString("ko-KR")}</strong></div>
-          <div className="card stat"><span className="muted">데이터 상태</span><strong>MOCK</strong></div>
+          <div className="card stat"><span className="muted">포트폴리오 상태</span><strong>MOCK</strong></div>
         </div>
       </section>
 

@@ -13,6 +13,7 @@ button, input { font:inherit; }
 .topbar { position:sticky; top:0; z-index:10; display:flex; gap:12px; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--border); background:rgba(11,13,16,.95); backdrop-filter:blur(12px); }
 .search { width:min(620px,75%); border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:12px; padding:11px 14px; }
 .testBanner { font-size:12px; color:#ffd479; border:1px solid #6e5827; padding:6px 8px; border-radius:999px; white-space:nowrap; }
+.liveBanner { color:#a7f3d0; border-color:#275f4a; }
 .page { padding:26px; display:grid; gap:28px; }
 .pageHeader { display:flex; gap:16px; align-items:flex-end; justify-content:space-between; }
 h1,h2,h3,p { margin-top:0; }
@@ -23,6 +24,8 @@ h3 { font-size:16px; margin-bottom:8px; }
 .muted { color:var(--muted); }
 .meta { color:var(--muted); font-size:12px; margin-top:8px; }
 .card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px; min-width:0; }
+.apiMessage { border-style:dashed; }
+.apiMessage p { margin-bottom:0; }
 .grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 .statsGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
 .stat { display:grid; gap:8px; }

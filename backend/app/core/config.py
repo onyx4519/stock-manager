@@ -46,6 +46,9 @@ class Settings:
                 symbol.strip().upper() for symbol in symbols.split(",") if symbol.strip()
             )
         )
+        self.massive_cache_seconds = int(os.getenv("MASSIVE_CACHE_SECONDS", "900"))
+        if self.massive_cache_seconds <= 0:
+            raise ValueError("MASSIVE_CACHE_SECONDS must be greater than zero.")
 
     def api_status(self) -> dict[str, bool]:
         return {

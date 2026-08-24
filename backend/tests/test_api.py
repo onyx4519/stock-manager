@@ -5,6 +5,7 @@ from app.api.dart import get_dart_provider
 from app.main import app
 from app.providers.dart import DartAPIError, DartConfigurationError
 from app.providers.market import MarketProviderConfigurationError
+from app.providers.mock.market_provider import MockMarketProvider
 
 client = TestClient(app)
 
@@ -12,12 +13,18 @@ client = TestClient(app)
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json()["mock_mode"] is True
-    assert response.json()["market_provider"] == "mock"
+    data = response.json()
+    assert data["mock_mode"] is (data["market_provider"] == "mock")
 
 
 def test_quote_is_marked_mock():
-    response = client.get("/api/v1/market/quotes/NVDA")
+    original_provider = market_api.service.provider
+    market_api.service.provider = MockMarketProvider()
+    try:
+        response = client.get("/api/v1/market/quotes/NVDA")
+    finally:
+        market_api.service.provider = original_provider
+
     assert response.status_code == 200
     assert response.json()["data_status"] == "MOCK"
 

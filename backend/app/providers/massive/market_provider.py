@@ -1,5 +1,7 @@
 import re
+import time
 from datetime import datetime, timedelta, timezone
+from threading import RLock
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -22,12 +24,18 @@ class MassiveMarketProvider:
         *,
         api_key: str | None = None,
         symbols: tuple[str, ...] | None = None,
+        cache_seconds: int | None = None,
         client: httpx.Client | None = None,
     ) -> None:
         self.api_key = settings.massive_api_key if api_key is None else api_key
         self.symbols = settings.massive_symbols if symbols is None else symbols
+        self.cache_seconds = (
+            settings.massive_cache_seconds if cache_seconds is None else cache_seconds
+        )
         self._client = client
         self._company_names: dict[str, tuple[str, str]] = {}
+        self._quotes: dict[str, tuple[float, StockQuote]] = {}
+        self._cache_lock = RLock()
 
     def list_quotes(self) -> list[StockQuote]:
         quotes: list[StockQuote] = []
@@ -46,34 +54,42 @@ class MassiveMarketProvider:
                 "MASSIVE_API_KEY is not configured."
             )
 
-        company_name, currency = self._get_company_metadata(normalized_symbol)
-        bars = self._get_recent_daily_bars(normalized_symbol)
-        if not bars:
-            return None
-        if len(bars) < 2:
-            raise MarketProviderDataError(
-                "Massive returned fewer than two completed daily bars."
+        with self._cache_lock:
+            cached = self._quotes.get(normalized_symbol)
+            now = time.monotonic()
+            if cached is not None and now - cached[0] < self.cache_seconds:
+                return cached[1].model_copy()
+
+            company_name, currency = self._get_company_metadata(normalized_symbol)
+            bars = self._get_recent_daily_bars(normalized_symbol)
+            if not bars:
+                return None
+            if len(bars) < 2:
+                raise MarketProviderDataError(
+                    "Massive returned fewer than two completed daily bars."
+                )
+
+            previous_close = self._number(bars[-2], "c")
+            latest_close = self._number(bars[-1], "c")
+            timestamp_ms = self._number(bars[-1], "t")
+            if previous_close <= 0:
+                raise MarketProviderDataError("Massive returned an invalid close price.")
+
+            change_percent = ((latest_close - previous_close) / previous_close) * 100
+            timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+
+            quote = StockQuote(
+                symbol=normalized_symbol,
+                company_name=company_name,
+                price=latest_close,
+                change_percent=round(change_percent, 4),
+                currency=currency,
+                timestamp=timestamp,
+                data_status=DataStatus.EOD,
+                provider="Massive",
             )
-
-        previous_close = self._number(bars[-2], "c")
-        latest_close = self._number(bars[-1], "c")
-        timestamp_ms = self._number(bars[-1], "t")
-        if previous_close <= 0:
-            raise MarketProviderDataError("Massive returned an invalid close price.")
-
-        change_percent = ((latest_close - previous_close) / previous_close) * 100
-        timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
-
-        return StockQuote(
-            symbol=normalized_symbol,
-            company_name=company_name,
-            price=latest_close,
-            change_percent=round(change_percent, 4),
-            currency=currency,
-            timestamp=timestamp,
-            data_status=DataStatus.EOD,
-            provider="Massive",
-        )
+            self._quotes[normalized_symbol] = (now, quote)
+            return quote.model_copy()
 
     def _get_company_metadata(self, symbol: str) -> tuple[str, str]:
         cached = self._company_names.get(symbol)

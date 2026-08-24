@@ -43,10 +43,11 @@ Massive의 미국 주식 EOD 데이터를 사용하려면 로컬 `backend/.env`�
 ```env
 MARKET_PROVIDER=massive
 MASSIVE_SYMBOLS=NVDA,AAPL,MSFT
+MASSIVE_CACHE_SECONDS=900
 MASSIVE_API_KEY=발급받은_키
 ```
 
-Massive Provider는 최근 완료된 두 거래일의 종가로 변동률을 계산합니다. 실시간 여부를 추측하지 않으며 모든 결과를 `EOD`로 표시합니다. 외부 API 오류 시 Mock 값으로 자동 대체하지 않습니다.
+Massive Provider는 최근 완료된 두 거래일의 종가로 변동률을 계산합니다. 실시간 여부를 추측하지 않으며 모든 결과를 `EOD`로 표시합니다. 동일 종목은 기본 15분 동안 캐시하여 호출 제한을 줄이며, 외부 API 오류 시 Mock 값으로 자동 대체하지 않습니다.
 
 ## Frontend 실행
 

@@ -61,13 +61,17 @@ def test_massive_quote_is_normalized_and_marked_eod():
 
 def test_massive_company_metadata_is_cached():
     client = FakeMassiveClient()
-    provider = MassiveMarketProvider(api_key="test-key", client=client)
+    provider = MassiveMarketProvider(
+        api_key="test-key",
+        cache_seconds=900,
+        client=client,
+    )
 
-    provider.get_quote("NVDA")
-    provider.get_quote("NVDA")
+    first_quote = provider.get_quote("NVDA")
+    second_quote = provider.get_quote("NVDA")
 
-    reference_calls = [call for call in client.calls if "/v3/reference/" in call[0]]
-    assert len(reference_calls) == 1
+    assert first_quote == second_quote
+    assert len(client.calls) == 2
 
 
 def test_massive_missing_key_fails_before_http_request():
