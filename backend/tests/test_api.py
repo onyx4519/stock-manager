@@ -1,8 +1,10 @@
 from fastapi.testclient import TestClient
 
+from app.api import market as market_api
 from app.api.dart import get_dart_provider
 from app.main import app
 from app.providers.dart import DartAPIError, DartConfigurationError
+from app.providers.market import MarketProviderConfigurationError
 
 client = TestClient(app)
 
@@ -11,12 +13,33 @@ def test_health():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["mock_mode"] is True
+    assert response.json()["market_provider"] == "mock"
 
 
 def test_quote_is_marked_mock():
     response = client.get("/api/v1/market/quotes/NVDA")
     assert response.status_code == 200
     assert response.json()["data_status"] == "MOCK"
+
+
+class UnconfiguredMarketProvider:
+    def get_quote(self, symbol: str):
+        raise MarketProviderConfigurationError("MASSIVE_API_KEY is not configured.")
+
+    def list_quotes(self):
+        raise MarketProviderConfigurationError("MASSIVE_API_KEY is not configured.")
+
+
+def test_market_provider_configuration_error_is_sanitized():
+    original_provider = market_api.service.provider
+    market_api.service.provider = UnconfiguredMarketProvider()
+    try:
+        response = client.get("/api/v1/market/quotes/NVDA")
+    finally:
+        market_api.service.provider = original_provider
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Market data provider is not configured."
 
 
 class StubDartProvider:

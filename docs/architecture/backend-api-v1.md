@@ -15,6 +15,9 @@ Base URL: `/api/v1`
 - `GET /api/v1/market/quotes`
 - `GET /api/v1/market/quotes/{symbol}`
 - Every quote includes timestamp, provider, currency, and `data_status`.
+- `MARKET_PROVIDER=mock` preserves the existing development data.
+- `MARKET_PROVIDER=massive` loads configured U.S. symbols from `MASSIVE_SYMBOLS`.
+- Massive quotes use the two most recent completed daily bars and are explicitly marked `EOD`; no realtime status is inferred.
 
 ## Portfolio
 - `GET /api/v1/portfolio/positions`

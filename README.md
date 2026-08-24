@@ -30,6 +30,24 @@ cd backend
 pytest -q
 ```
 
+## 시장 데이터 모드
+
+기본값은 명확하게 표시된 Mock 데이터입니다.
+
+```env
+MARKET_PROVIDER=mock
+```
+
+Massive의 미국 주식 EOD 데이터를 사용하려면 로컬 `backend/.env`에서 다음처럼 설정합니다.
+
+```env
+MARKET_PROVIDER=massive
+MASSIVE_SYMBOLS=NVDA,AAPL,MSFT
+MASSIVE_API_KEY=발급받은_키
+```
+
+Massive Provider는 최근 완료된 두 거래일의 종가로 변동률을 계산합니다. 실시간 여부를 추측하지 않으며 모든 결과를 `EOD`로 표시합니다. 외부 API 오류 시 Mock 값으로 자동 대체하지 않습니다.
+
 ## Frontend 실행
 
 ```bash
