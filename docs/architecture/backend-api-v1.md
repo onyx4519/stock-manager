@@ -47,8 +47,10 @@ Transactions persist in SQLite. The API rejects unsupported symbols, currency mi
 ## OpenDART
 - `GET /api/v1/dart/companies/search?stock_code={six-digit-code}`
 - `GET /api/v1/dart/companies/search?corp_name={exact-name}`
+- `GET /api/v1/dart/companies/{stock_code}/disclosures?days=365&limit=20`
+- `GET /api/v1/dart/companies/{stock_code}/financials?business_year={year}&report_code=11011`
 
-The corporation-code archive is fetched through the backend and cached in memory. The API returns `503` when `DART_API_KEY` is missing, `502` for upstream or response errors, and `404` when no exact match exists.
+The corporation-code archive and JSON responses are fetched through the backend and cached in memory. Disclosure results include official DART viewer links. Major accounts prefer consolidated statements (`CFS`) and fall back to separate statements (`OFS`). OpenDART's no-data status (`013`) becomes an empty result rather than a server error. The API returns `503` when `DART_API_KEY` is missing, `502` for upstream or response errors, and `404` when no exact company match exists.
 
 ## Design rules
 1. Frontend never calls market vendors directly.

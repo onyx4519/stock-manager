@@ -89,6 +89,21 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .watchlistPrice b { font-size:24px; }
 .inlineLink { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .countBadge { border:1px solid var(--border); background:var(--panel); border-radius:999px; padding:8px 12px; color:var(--muted); font-size:13px; }
+.companySummary { display:grid; align-content:start; gap:8px; }
+.companySummary h3, .companySummary p { margin-bottom:0; }
+.sourceBadge { display:inline-flex; align-items:center; width:max-content; max-width:100%; border:1px solid #3d5279; color:#bfd4ff; border-radius:999px; padding:5px 9px; font-size:11px; }
+.financialTableWrap { overflow-x:auto; }
+.financialTable { width:100%; border-collapse:collapse; min-width:620px; }
+.financialTable th, .financialTable td { border-bottom:1px solid var(--border); padding:12px 10px; text-align:right; }
+.financialTable th:first-child, .financialTable td:first-child { text-align:left; }
+.financialTable th { color:var(--muted); font-size:12px; font-weight:600; }
+.financialTable td { font-size:13px; }
+.dataNotice { color:var(--muted); font-size:11px; margin:14px 0 0; }
+.disclosureList { display:grid; gap:10px; }
+.disclosureRow { display:flex; align-items:center; justify-content:space-between; gap:18px; transition:border-color .15s ease, background .15s ease; }
+.disclosureRow:hover { border-color:#3d5279; background:var(--panel2); }
+.disclosureMeta { display:flex; align-items:center; justify-content:flex-end; gap:10px; color:var(--muted); font-size:12px; white-space:nowrap; }
+.externalMark { color:var(--accent); }
 .mobileNav { display:none; }
 @media (max-width: 820px) {
   .appShell { display:block; min-height:100vh; padding-bottom:72px; }
@@ -111,6 +126,8 @@ button:disabled { cursor:not-allowed; opacity:.55; }
   .stockResultPrice { justify-content:flex-start; flex-wrap:wrap; }
   .watchButton { width:100%; }
   .watchlistGrid { grid-template-columns:1fr; }
+  .disclosureRow { align-items:flex-start; flex-direction:column; }
+  .disclosureMeta { justify-content:flex-start; flex-wrap:wrap; white-space:normal; }
   .mobileNav { position:fixed; z-index:30; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid var(--border); background:#0e1115; }
   .mobileNavItem { min-height:58px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted); }
 }

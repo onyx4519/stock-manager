@@ -21,6 +21,21 @@ class FakeClient:
         )
 
 
+class RouteClient:
+    def __init__(self, payloads: dict[str, dict]) -> None:
+        self.payloads = payloads
+        self.calls: list[tuple[str, dict]] = []
+
+    def get(self, url: str, **kwargs) -> httpx.Response:
+        self.calls.append((url, kwargs.get("params", {})))
+        path = "/" + url.rsplit("/", 1)[-1]
+        return httpx.Response(
+            200,
+            json=self.payloads[path],
+            request=httpx.Request("GET", url),
+        )
+
+
 def corp_code_archive() -> bytes:
     xml_data = """<?xml version="1.0" encoding="UTF-8"?>
 <result>
@@ -76,3 +91,102 @@ def test_missing_api_key_fails_before_http_request():
 
     with pytest.raises(DartConfigurationError, match="DART_API_KEY"):
         provider.get_corp_codes()
+
+
+def test_disclosures_are_normalized_and_cached():
+    client = RouteClient(
+        {
+            "/list.json": {
+                "status": "000",
+                "message": "정상",
+                "total_count": "1",
+                "list": [
+                    {
+                        "corp_cls": "Y",
+                        "corp_name": "삼성전자",
+                        "corp_code": "00126380",
+                        "stock_code": "005930",
+                        "report_nm": "반기보고서 (2026.06)",
+                        "rcept_no": "20260814001234",
+                        "flr_nm": "삼성전자",
+                        "rcept_dt": "20260814",
+                        "rm": "연",
+                    }
+                ],
+            }
+        }
+    )
+    provider = DartProvider(api_key="test-key", client=client, cache_seconds=900)
+
+    total, items = provider.search_disclosures("00126380", days=365, limit=20)
+    cached_total, cached_items = provider.search_disclosures(
+        "00126380", days=365, limit=20
+    )
+
+    assert total == cached_total == 1
+    assert items == cached_items
+    assert items[0]["receipt_date"].isoformat() == "2026-08-14"
+    assert items[0]["viewer_url"].endswith("20260814001234")
+    assert len(client.calls) == 1
+    assert client.calls[0][1]["crtfc_key"] == "test-key"
+
+
+def test_major_accounts_prefer_consolidated_statements():
+    base = {
+        "rcept_no": "20260318001234",
+        "bsns_year": "2025",
+        "reprt_code": "11011",
+        "account_nm": "매출액",
+        "fs_nm": "연결재무제표",
+        "sj_div": "IS",
+        "sj_nm": "손익계산서",
+        "thstrm_nm": "제57기",
+        "thstrm_dt": "2025.01.01 ~ 2025.12.31",
+        "thstrm_amount": "300,000",
+        "thstrm_add_amount": "",
+        "frmtrm_nm": "제56기",
+        "frmtrm_dt": "2024.01.01 ~ 2024.12.31",
+        "frmtrm_amount": "250,000",
+        "currency": "KRW",
+    }
+    client = RouteClient(
+        {
+            "/fnlttSinglAcnt.json": {
+                "status": "000",
+                "message": "정상",
+                "list": [
+                    {**base, "fs_div": "OFS", "fs_nm": "재무제표"},
+                    {**base, "fs_div": "CFS"},
+                ],
+            }
+        }
+    )
+    provider = DartProvider(api_key="test-key", client=client)
+
+    division, accounts = provider.get_major_accounts(
+        "00126380", business_year=2025, report_code="11011"
+    )
+
+    assert division == "CFS"
+    assert len(accounts) == 1
+    assert accounts[0]["current_term_amount"] == 300000
+    assert accounts[0]["previous_term_amount"] == 250000
+
+
+def test_opendart_no_data_status_returns_an_empty_list():
+    client = RouteClient(
+        {
+            "/list.json": {
+                "status": "013",
+                "message": "조회된 데이터가 없습니다.",
+            }
+        }
+    )
+    provider = DartProvider(api_key="test-key", client=client)
+
+    total, items = provider.search_disclosures("00126380")
+
+    assert total == 0
+    assert items == []
+    assert provider._amount("-") is None
+    assert provider._amount("(1,000)") == -1000

@@ -23,6 +23,60 @@ export type WatchlistItem = {
   provider: string | null;
 };
 
+export type DartCompany = {
+  corporationCode: string;
+  corporationName: string;
+  corporationEnglishName: string | null;
+  stockCode: string | null;
+  modifyDate: string | null;
+};
+
+export type DartDisclosure = {
+  corporationClass: string;
+  corporationName: string;
+  corporationCode: string;
+  stockCode: string | null;
+  reportName: string;
+  receiptNumber: string;
+  filerName: string;
+  receiptDate: string;
+  remarks: string | null;
+  viewerUrl: string;
+};
+
+export type DartDisclosureList = {
+  company: DartCompany;
+  totalCount: number;
+  items: DartDisclosure[];
+};
+
+export type DartFinancialAccount = {
+  receiptNumber: string;
+  businessYear: string;
+  reportCode: string;
+  accountName: string;
+  financialStatementDivision: string;
+  financialStatementName: string;
+  statementDivision: string;
+  statementName: string;
+  currentTermName: string | null;
+  currentTermDate: string | null;
+  currentTermAmount: number | null;
+  currentTermCumulativeAmount: number | null;
+  previousTermName: string | null;
+  previousTermDate: string | null;
+  previousTermAmount: number | null;
+  currency: string | null;
+};
+
+export type DartFinancialStatement = {
+  company: DartCompany;
+  businessYear: string;
+  reportCode: string;
+  financialStatementDivision: string | null;
+  accounts: DartFinancialAccount[];
+};
+
 export type PortfolioPosition = {
   symbol: string;
   companyName: string;

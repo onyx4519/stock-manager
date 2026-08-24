@@ -61,6 +61,49 @@ class StubDartProvider:
             }
         return None
 
+    def search_disclosures(self, corp_code, *, days, limit):
+        assert corp_code == "00126380"
+        return 1, [
+            {
+                "corporation_class": "Y",
+                "corporation_name": "삼성전자",
+                "corporation_code": corp_code,
+                "stock_code": "005930",
+                "report_name": "반기보고서 (2026.06)",
+                "receipt_number": "20260814001234",
+                "filer_name": "삼성전자",
+                "receipt_date": "2026-08-14",
+                "remarks": "연",
+                "viewer_url": (
+                    "https://dart.fss.or.kr/dsaf001/main.do?"
+                    "rcpNo=20260814001234"
+                ),
+            }
+        ][:limit]
+
+    def get_major_accounts(self, corp_code, *, business_year, report_code):
+        assert corp_code == "00126380"
+        return "CFS", [
+            {
+                "receipt_number": "20260318001234",
+                "business_year": str(business_year),
+                "report_code": report_code,
+                "account_name": "매출액",
+                "financial_statement_division": "CFS",
+                "financial_statement_name": "연결재무제표",
+                "statement_division": "IS",
+                "statement_name": "손익계산서",
+                "current_term_name": "제57기",
+                "current_term_date": "2025.01.01 ~ 2025.12.31",
+                "current_term_amount": 300000,
+                "current_term_cumulative_amount": None,
+                "previous_term_name": "제56기",
+                "previous_term_date": "2024.01.01 ~ 2024.12.31",
+                "previous_term_amount": 250000,
+                "currency": "KRW",
+            }
+        ]
+
 
 class UnconfiguredDartProvider:
     def find_company(self, *, corp_name=None, stock_code=None):
@@ -111,3 +154,24 @@ def test_dart_company_search_hides_upstream_error_details():
     assert response.json()["detail"] == (
         "OpenDART is unavailable or returned invalid data."
     )
+
+
+def test_dart_disclosures_and_financials():
+    app.dependency_overrides[get_dart_provider] = StubDartProvider
+    try:
+        disclosures = client.get(
+            "/api/v1/dart/companies/005930/disclosures?days=365&limit=10"
+        )
+        financials = client.get(
+            "/api/v1/dart/companies/005930/financials?"
+            "business_year=2025&report_code=11011"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert disclosures.status_code == 200
+    assert disclosures.json()["total_count"] == 1
+    assert disclosures.json()["items"][0]["receipt_number"] == "20260814001234"
+    assert financials.status_code == 200
+    assert financials.json()["financial_statement_division"] == "CFS"
+    assert financials.json()["accounts"][0]["current_term_amount"] == 300000

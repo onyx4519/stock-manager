@@ -47,6 +47,9 @@ class Settings:
         self.kis_app_key = os.getenv("KIS_APP_KEY", "")
         self.kis_app_secret = os.getenv("KIS_APP_SECRET", "")
         self.dart_api_key = os.getenv("DART_API_KEY", "")
+        self.dart_cache_seconds = int(os.getenv("DART_CACHE_SECONDS", "900"))
+        if self.dart_cache_seconds <= 0:
+            raise ValueError("DART_CACHE_SECONDS must be greater than zero.")
         self.massive_api_key = os.getenv("MASSIVE_API_KEY", "")
         symbols = os.getenv("MASSIVE_SYMBOLS", "NVDA")
         self.massive_symbols = tuple(
