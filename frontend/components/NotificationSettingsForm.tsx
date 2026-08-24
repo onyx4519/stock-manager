@@ -16,7 +16,7 @@ export function NotificationSettingsForm({ enabled }: { enabled: boolean }) {
   >(updateNotificationPreferenceAction, undefined);
 
   return (
-    <form action={action} className="card notificationSettingsCard" ref={formRef}>
+    <form action={action} className="notificationSettingsCard" ref={formRef}>
       <div>
         <h2>서비스 알림</h2>
         <p className="muted">

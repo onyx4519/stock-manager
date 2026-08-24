@@ -195,7 +195,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .formMessageText { color:#ffb4b4; font-size:12px; margin:0; }
 .formSuccessText { color:#a7f3d0; font-size:12px; margin:0; }
 .authSwitch { color:var(--muted); font-size:12px; text-align:center; margin:0; }
-.accountPage { width:min(760px,100%); min-height:calc(100vh - 70px); margin:0 auto; grid-template-rows:auto auto auto 1fr; }
+.accountPage { width:min(760px,100%); min-height:calc(100vh - 70px); margin:0 auto; grid-template-rows:auto auto 1fr; }
 .accountIntro { margin:12px 0 0; }
 .accountDetailsCard { display:grid; gap:16px; }
 .accountDetailsCard h2 { margin-bottom:0; }
@@ -204,7 +204,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountDetails dt { color:var(--muted); font-size:13px; }
 .accountDetails dd { margin:0; overflow-wrap:anywhere; }
 .accountDeletionArea { width:100%; align-self:end; justify-self:start; display:grid; justify-items:start; padding-top:24px; }
-.notificationSettingsCard { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; padding:14px 16px; }
+.notificationSettingsCard { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; border-top:1px solid var(--border); padding:16px 0 0; }
 .notificationSettingsCard h2 { margin-bottom:4px; font-size:16px; }
 .notificationSettingsCard p { margin-bottom:0; font-size:12px; line-height:1.45; }
 .notificationSettingToggle { display:flex; align-items:center; gap:9px; color:var(--text); font-size:13px; cursor:pointer; }
