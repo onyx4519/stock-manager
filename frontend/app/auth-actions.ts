@@ -11,7 +11,10 @@ import {
 } from "@/lib/api";
 
 
-export type AuthActionState = { message?: string } | undefined;
+export type AuthActionState = {
+  message?: string;
+  failedLoginAttempts?: number;
+} | undefined;
 
 const cookieOptions = {
   httpOnly: true,
@@ -72,6 +75,8 @@ export async function loginAction(
       message: error instanceof ApiError && error.status === 401
         ? "이메일 또는 비밀번호가 올바르지 않습니다."
         : "로그인 요청을 처리하지 못했습니다.",
+      failedLoginAttempts:
+        error instanceof ApiError ? error.failedLoginAttempts : undefined,
     };
   }
   if (passwordChangeRequired) redirect("/change-password");

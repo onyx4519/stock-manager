@@ -12,7 +12,9 @@ from app.schemas.notifications import NotificationCategory
 
 
 class InvalidCredentialsError(ValueError):
-    pass
+    def __init__(self, message: str, failed_attempts: int | None = None) -> None:
+        super().__init__(message)
+        self.failed_attempts = failed_attempts
 
 
 class InvalidCurrentPasswordError(ValueError):
@@ -79,9 +81,15 @@ class AuthService:
         )
 
     def login(self, payload: UserCredentials) -> AuthSession:
-        user = self.repository.verify_credentials(str(payload.email), payload.password)
+        user, failed_attempts = self.repository.verify_credentials(
+            str(payload.email),
+            payload.password,
+        )
         if user is None:
-            raise InvalidCredentialsError("Invalid email or password.")
+            raise InvalidCredentialsError(
+                "Invalid email or password.",
+                failed_attempts=failed_attempts,
+            )
         return self._create_session(user)
 
     def authenticate(self, token: str) -> AuthUser | None:

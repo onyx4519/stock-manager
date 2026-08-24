@@ -87,7 +87,13 @@ def login(payload: UserCredentials) -> AuthSession:
     try:
         return service.login(payload)
     except InvalidCredentialsError as exc:
-        raise HTTPException(status_code=401, detail="Invalid email or password.") from exc
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "message": "Invalid email or password.",
+                "failed_attempts": exc.failed_attempts,
+            },
+        ) from exc
 
 
 @router.get("/me", response_model=AuthUser)

@@ -128,7 +128,11 @@ class AuthRepository:
             raise RuntimeError("Created user could not be loaded.")
         return user
 
-    def verify_credentials(self, email: str, password: str) -> AuthUser | None:
+    def verify_credentials(
+        self,
+        email: str,
+        password: str,
+    ) -> tuple[AuthUser | None, int | None]:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
@@ -144,22 +148,28 @@ class AuthRepository:
                 (email.casefold(), self.database.LEGACY_USER_ID),
             ).fetchone()
             if row is None:
-                return None
+                return None, None
             if not self._verify_password(password, row["password_hash"]):
+                failed_attempts = min(int(row["failed_login_attempts"]) + 1, 5)
                 connection.execute(
                     """
                     UPDATE users
-                    SET failed_login_attempts = failed_login_attempts + 1,
+                    SET failed_login_attempts = ?,
                         password_change_required = CASE
-                          WHEN failed_login_attempts + 1 >= 5 THEN 1
+                          WHEN ? >= 5 THEN 1
                           ELSE password_change_required
                         END,
                         last_failed_login_at = ?
                     WHERE id = ?
                     """,
-                    (datetime.now(timezone.utc).isoformat(), row["id"]),
+                    (
+                        failed_attempts,
+                        failed_attempts,
+                        datetime.now(timezone.utc).isoformat(),
+                        row["id"],
+                    ),
                 )
-                return None
+                return None, failed_attempts
             if not row["password_change_required"]:
                 connection.execute(
                     """
@@ -169,7 +179,7 @@ class AuthRepository:
                     """,
                     (row["id"],),
                 )
-            return AuthUser.model_validate(dict(row))
+            return AuthUser.model_validate(dict(row)), 0
 
     def get_user(self, user_id: str) -> AuthUser | None:
         with self.database.connection() as connection:

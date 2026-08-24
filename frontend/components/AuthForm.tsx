@@ -150,13 +150,21 @@ export function AuthForm({
         />
       </label>
       {!registering && (
-        <label className="autoLoginOption">
-          <input name="rememberMe" type="checkbox" />
-          <span>
-            자동 로그인
-            <small>이 브라우저에서 30일간 로그인 상태를 유지합니다.</small>
-          </span>
-        </label>
+        <>
+          <div className="loginAttemptNotice" role="status">
+            <strong>비밀번호를 5회 틀리면 비밀번호 변경이 필요합니다.</strong>
+            {typeof state?.failedLoginAttempts === "number" && (
+              <span>{state.failedLoginAttempts}/5회 틀렸습니다.</span>
+            )}
+          </div>
+          <label className="autoLoginOption">
+            <input name="rememberMe" type="checkbox" />
+            <span>
+              자동 로그인
+              <small>이 브라우저에서 30일간 로그인 상태를 유지합니다.</small>
+            </span>
+          </label>
+        </>
       )}
       {state?.message && (!registering || !consentModalOpen) && (
         <p className="formMessageText" role="alert">{state.message}</p>

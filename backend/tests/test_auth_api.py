@@ -175,6 +175,33 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
             json={"email": payload["email"], "password": "wrong-pass"},
         )
         assert invalid.status_code == 401
+        assert invalid.json()["detail"] == {
+            "message": "Invalid email or password.",
+            "failed_attempts": 1,
+        }
+
+        valid = client.post(
+            "/api/v1/auth/login",
+            json={"email": payload["email"], "password": payload["password"]},
+        )
+        assert valid.status_code == 200
+        with database.connection() as connection:
+            reset = connection.execute(
+                """
+                SELECT failed_login_attempts, last_failed_login_at
+                FROM users WHERE email = ?
+                """,
+                (payload["email"],),
+            ).fetchone()
+        assert reset["failed_login_attempts"] == 0
+        assert reset["last_failed_login_at"] is None
+
+        unknown = client.post(
+            "/api/v1/auth/login",
+            json={"email": "unknown@example.com", "password": "wrong-pass"},
+        )
+        assert unknown.status_code == 401
+        assert unknown.json()["detail"]["failed_attempts"] is None
     finally:
         auth_api.service = original
 
@@ -197,12 +224,13 @@ def test_five_failed_logins_require_password_change(tmp_path):
         registration = client.post("/api/v1/auth/register", json=payload)
         assert registration.status_code == 201
 
-        for _ in range(4):
+        for failed_attempts in range(1, 5):
             invalid = client.post(
                 "/api/v1/auth/login",
                 json={"email": payload["email"], "password": "wrong-pass"},
             )
             assert invalid.status_code == 401
+            assert invalid.json()["detail"]["failed_attempts"] == failed_attempts
 
         with database.connection() as connection:
             before_limit = connection.execute(
@@ -220,6 +248,7 @@ def test_five_failed_logins_require_password_change(tmp_path):
             json={"email": payload["email"], "password": "wrong-pass"},
         )
         assert fifth_failure.status_code == 401
+        assert fifth_failure.json()["detail"]["failed_attempts"] == 5
 
         with database.connection() as connection:
             at_limit = connection.execute(

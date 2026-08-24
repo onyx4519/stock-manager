@@ -270,6 +270,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
+    public readonly failedLoginAttempts?: number,
   ) {
     super(message);
     this.name = "ApiError";
@@ -295,13 +296,24 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     let message = "백엔드가 요청을 처리하지 못했습니다.";
+    let failedLoginAttempts: number | undefined;
     try {
       const payload = (await response.json()) as { detail?: unknown };
       if (typeof payload.detail === "string") message = payload.detail;
+      if (payload.detail && typeof payload.detail === "object") {
+        const detail = payload.detail as {
+          message?: unknown;
+          failed_attempts?: unknown;
+        };
+        if (typeof detail.message === "string") message = detail.message;
+        if (typeof detail.failed_attempts === "number") {
+          failedLoginAttempts = detail.failed_attempts;
+        }
+      }
     } catch {
       // Keep the sanitized fallback when the error body is not JSON.
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, failedLoginAttempts);
   }
 
   if (response.status === 204) return undefined as T;
