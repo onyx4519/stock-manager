@@ -43,6 +43,8 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "email": "first@example.com",
                 "display_name": "First User",
                 "password": "safe-password-1",
+                "birth_date": "2000-01-02",
+                "gender": "UNSPECIFIED",
             },
         )
         second = client.post(
@@ -51,14 +53,19 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "email": "second@example.com",
                 "display_name": "Second User",
                 "password": "safe-password-2",
+                "birth_date": "1995-05-15",
+                "gender": "FEMALE",
                 "personalization_consent": True,
             },
         )
         assert first.status_code == 201
         assert second.status_code == 201
+        assert first.json()["user"]["birth_date"] == "2000-01-02"
+        assert first.json()["user"]["gender"] == "UNSPECIFIED"
         assert first.json()["user"]["personalization_consent"] is False
         assert first.json()["user"]["personalization_consent_at"] is None
         assert second.json()["user"]["personalization_consent"] is True
+        assert second.json()["user"]["gender"] == "FEMALE"
         assert second.json()["user"]["personalization_consent_at"]
         with database.connection() as connection:
             consent_version = connection.execute(
@@ -91,6 +98,8 @@ def test_authentication_and_user_data_isolation(tmp_path):
         me = client.get("/api/v1/auth/me", headers=first_headers)
         assert me.status_code == 200
         assert me.json()["email"] == "first@example.com"
+        assert me.json()["birth_date"] == "2000-01-02"
+        assert me.json()["gender"] == "UNSPECIFIED"
         assert me.json()["personalization_consent"] is False
         assert client.post("/api/v1/auth/logout", headers=first_headers).status_code == 204
         assert client.get("/api/v1/auth/me", headers=first_headers).status_code == 401
@@ -112,6 +121,8 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
         "email": "user@example.com",
         "display_name": "User Name",
         "password": "safe-password",
+        "birth_date": "2001-03-04",
+        "gender": "MALE",
     }
     try:
         assert client.post("/api/v1/auth/register", json=payload).status_code == 201
@@ -121,6 +132,38 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
             json={"email": payload["email"], "password": "wrong-pass"},
         )
         assert invalid.status_code == 401
+    finally:
+        auth_api.service = original
+
+
+def test_auth_rejects_invalid_basic_profile_values(tmp_path):
+    database = SQLiteDatabase(tmp_path / "auth-profile-errors.db")
+    original = auth_api.service
+    auth_api.service = AuthService(AuthRepository(database))
+    client = TestClient(app)
+    base_payload = {
+        "email": "profile@example.com",
+        "display_name": "Profile User",
+        "password": "safe-password",
+        "birth_date": "2000-01-01",
+        "gender": "UNSPECIFIED",
+    }
+    try:
+        missing_birth_date = dict(base_payload)
+        missing_birth_date.pop("birth_date")
+        assert client.post(
+            "/api/v1/auth/register", json=missing_birth_date
+        ).status_code == 422
+
+        future_birth_date = {**base_payload, "birth_date": "2999-01-01"}
+        assert client.post(
+            "/api/v1/auth/register", json=future_birth_date
+        ).status_code == 422
+
+        invalid_gender = {**base_payload, "gender": "OTHER"}
+        assert client.post(
+            "/api/v1/auth/register", json=invalid_gender
+        ).status_code == 422
     finally:
         auth_api.service = original
 
@@ -139,6 +182,8 @@ def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
                 "email": "leaving@example.com",
                 "display_name": "Leaving User",
                 "password": "safe-password",
+                "birth_date": "1999-12-31",
+                "gender": "UNSPECIFIED",
             },
         )
         assert registration.status_code == 201
@@ -267,7 +312,7 @@ def test_legacy_records_are_preserved_and_claimed_by_first_user(tmp_path):
     assert "user_id" in columns
 
 
-def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
+def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
     path = tmp_path / "existing-users.db"
     with sqlite3.connect(path) as connection:
         connection.executescript(
@@ -304,7 +349,8 @@ def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
     with database.connection() as connection:
         row = connection.execute(
             """
-            SELECT personalization_consent, personalization_consent_at,
+            SELECT birth_date, gender,
+                   personalization_consent, personalization_consent_at,
                    personalization_consent_version
             FROM users WHERE id = 'existing-user'
             """
@@ -319,6 +365,8 @@ def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
             """
         )
 
+    assert row["birth_date"] is None
+    assert row["gender"] == "UNSPECIFIED"
     assert row["personalization_consent"] == 0
     assert row["personalization_consent_at"] is None
     assert row["personalization_consent_version"] is None

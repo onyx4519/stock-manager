@@ -3,6 +3,9 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL COLLATE NOCASE UNIQUE,
   display_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
+  birth_date TEXT,
+  gender TEXT NOT NULL DEFAULT 'UNSPECIFIED'
+    CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE')),
   personalization_consent INTEGER NOT NULL DEFAULT 0
     CHECK(personalization_consent IN (0, 1)),
   personalization_consent_at TEXT,

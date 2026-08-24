@@ -1,8 +1,15 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, field_validator
+
+
+class Gender(StrEnum):
+    UNSPECIFIED = "UNSPECIFIED"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
 
 
 class UserCredentials(BaseModel):
@@ -21,6 +28,8 @@ class UserCredentials(BaseModel):
 
 class UserRegister(UserCredentials):
     display_name: str = Field(min_length=2, max_length=50)
+    birth_date: date
+    gender: Gender = Gender.UNSPECIFIED
     personalization_consent: bool = False
 
     @field_validator("display_name")
@@ -31,11 +40,22 @@ class UserRegister(UserCredentials):
             raise ValueError("display_name must contain at least two characters.")
         return normalized
 
+    @field_validator("birth_date")
+    @classmethod
+    def validate_birth_date(cls, value: date) -> date:
+        if value < date(1900, 1, 1):
+            raise ValueError("birth_date must be on or after 1900-01-01.")
+        if value > datetime.now(ZoneInfo("Asia/Seoul")).date():
+            raise ValueError("birth_date cannot be in the future.")
+        return value
+
 
 class AuthUser(BaseModel):
     id: str
     email: str
     display_name: str
+    birth_date: date | None = None
+    gender: Gender = Gender.UNSPECIFIED
     personalization_consent: bool = False
     personalization_consent_at: datetime | None = None
     created_at: datetime

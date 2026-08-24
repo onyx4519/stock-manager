@@ -5,6 +5,15 @@ import { useActionState } from "react";
 import type { AuthActionState } from "@/app/auth-actions";
 
 
+function todayInKorea() {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).format(new Date());
+}
+
 export function AuthForm({
   action,
   mode,
@@ -17,10 +26,33 @@ export function AuthForm({
   return (
     <form action={formAction} className="card authForm">
       {registering && (
-        <label>
-          사용자명
-          <input autoComplete="name" minLength={2} name="displayName" required />
-        </label>
+        <>
+          <label>
+            사용자명
+            <input autoComplete="name" minLength={2} name="displayName" required />
+          </label>
+          <label>
+            생년월일
+            <input
+              max={todayInKorea()}
+              min="1900-01-01"
+              name="birthDate"
+              required
+              type="date"
+            />
+          </label>
+          <label>
+            성별
+            <select defaultValue="UNSPECIFIED" name="gender">
+              <option value="UNSPECIFIED">선택 안함</option>
+              <option value="MALE">남성</option>
+              <option value="FEMALE">여성</option>
+            </select>
+          </label>
+          <p className="profileDataNotice">
+            생년월일과 성별은 계정 기본정보로만 저장됩니다.
+          </p>
+        </>
       )}
       <label>
         이메일

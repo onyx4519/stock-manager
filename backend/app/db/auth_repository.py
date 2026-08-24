@@ -2,10 +2,10 @@ import hashlib
 import secrets
 import sqlite3
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.db.database import SQLiteDatabase
-from app.schemas.auth import AccountDeletionReason, AuthUser
+from app.schemas.auth import AccountDeletionReason, AuthUser, Gender
 
 
 class DuplicateUserError(ValueError):
@@ -26,6 +26,8 @@ class AuthRepository:
         email: str,
         display_name: str,
         password: str,
+        birth_date: date | None = None,
+        gender: Gender = Gender.UNSPECIFIED,
         personalization_consent: bool = False,
     ) -> AuthUser:
         user_id = str(uuid.uuid4())
@@ -47,15 +49,18 @@ class AuthRepository:
                     """
                     INSERT INTO users (
                       id, email, display_name, password_hash,
+                      birth_date, gender,
                       personalization_consent, personalization_consent_at,
                       personalization_consent_version, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
                         email.casefold(),
                         display_name,
                         password_hash,
+                        birth_date.isoformat() if birth_date is not None else None,
+                        gender.value,
                         int(personalization_consent),
                         consented_at,
                         consent_version,
@@ -83,7 +88,7 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, password_hash,
+                SELECT id, email, display_name, password_hash, birth_date, gender,
                        personalization_consent, personalization_consent_at,
                        created_at
                 FROM users
@@ -99,7 +104,8 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, personalization_consent,
+                SELECT id, email, display_name, birth_date, gender,
+                       personalization_consent,
                        personalization_consent_at, created_at
                 FROM users WHERE id = ? AND id != ?
                 """,
@@ -133,6 +139,7 @@ class AuthRepository:
             row = connection.execute(
                 """
                 SELECT users.id, users.email, users.display_name,
+                       users.birth_date, users.gender,
                        users.personalization_consent,
                        users.personalization_consent_at, users.created_at
                 FROM sessions

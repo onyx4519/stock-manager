@@ -28,6 +28,15 @@ function credentials(formData: FormData) {
   };
 }
 
+function todayInKorea() {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).format(new Date());
+}
+
 export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
@@ -51,10 +60,20 @@ export async function registerAction(
 ): Promise<AuthActionState> {
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { message: "비밀번호는 8자 이상이어야 합니다." };
+  const birthDate = String(formData.get("birthDate") ?? "");
+  if (birthDate < "1900-01-01" || birthDate > todayInKorea()) {
+    return { message: "생년월일을 올바르게 입력해 주세요." };
+  }
+  const genderValue = String(formData.get("gender") ?? "UNSPECIFIED");
+  const gender = genderValue === "MALE" || genderValue === "FEMALE"
+    ? genderValue
+    : "UNSPECIFIED";
   try {
     const session = await registerUser({
       ...credentials(formData),
       display_name: String(formData.get("displayName") ?? "").trim(),
+      birth_date: birthDate,
+      gender,
       personalization_consent: formData.get("personalizationConsent") === "on",
     });
     (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);

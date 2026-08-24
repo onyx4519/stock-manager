@@ -1,4 +1,5 @@
 export type DataStatus = "REALTIME" | "DELAYED" | "EOD" | "MOCK" | "UNAVAILABLE";
+export type Gender = "UNSPECIFIED" | "MALE" | "FEMALE";
 
 export type StockQuote = {
   symbol: string;
@@ -35,6 +36,8 @@ export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
+  birthDate: string | null;
+  gender: Gender;
   personalizationConsent: boolean;
   personalizationConsentAt: string | null;
   createdAt: string;

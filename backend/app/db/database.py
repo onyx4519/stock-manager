@@ -30,6 +30,7 @@ class SQLiteDatabase:
                 connection.execute("PRAGMA foreign_keys = ON")
                 connection.executescript(schema)
                 self._migrate_user_ownership(connection)
+                self._migrate_basic_profile(connection)
                 self._migrate_personalization_consent(connection)
                 self._migrate_account_deletion_feedback(connection)
                 connection.execute("PRAGMA optimize")
@@ -134,6 +135,22 @@ class SQLiteDatabase:
             ON watchlist_items(user_id, created_at DESC, symbol)
             """
         )
+
+    @staticmethod
+    def _migrate_basic_profile(connection: sqlite3.Connection) -> None:
+        user_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info('users')")
+        }
+        if "birth_date" not in user_columns:
+            connection.execute("ALTER TABLE users ADD COLUMN birth_date TEXT")
+        if "gender" not in user_columns:
+            connection.execute(
+                """
+                ALTER TABLE users ADD COLUMN gender TEXT NOT NULL
+                DEFAULT 'UNSPECIFIED'
+                CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE'))
+                """
+            )
 
     @staticmethod
     def _migrate_personalization_consent(

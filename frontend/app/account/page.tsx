@@ -4,12 +4,18 @@ import { requireCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-function formatJoinedAt(value: string) {
+function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
     month: "long",
     day: "numeric",
   }).format(new Date(value));
+}
+
+function genderLabel(value: "UNSPECIFIED" | "MALE" | "FEMALE") {
+  if (value === "MALE") return "남성";
+  if (value === "FEMALE") return "여성";
+  return "선택 안함";
 }
 
 export default async function AccountPage() {
@@ -39,14 +45,22 @@ export default async function AccountPage() {
             <dd>{user.email}</dd>
           </div>
           <div>
+            <dt>생년월일</dt>
+            <dd>{user.birthDate ? formatDate(user.birthDate) : "기존 계정 정보 없음"}</dd>
+          </div>
+          <div>
+            <dt>성별</dt>
+            <dd>{genderLabel(user.gender)}</dd>
+          </div>
+          <div>
             <dt>가입일</dt>
-            <dd>{formatJoinedAt(user.createdAt)}</dd>
+            <dd>{formatDate(user.createdAt)}</dd>
           </div>
           <div>
             <dt>맞춤형 정보</dt>
             <dd>
               {user.personalizationConsent
-                ? `선택 동의함 · ${formatJoinedAt(user.personalizationConsentAt ?? user.createdAt)}`
+                ? `선택 동의함 · ${formatDate(user.personalizationConsentAt ?? user.createdAt)}`
                 : "선택 동의하지 않음"}
             </dd>
           </div>
