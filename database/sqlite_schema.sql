@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS account_deletion_feedback (
     'DIFFICULT_TO_USE',
     'DATA_QUALITY',
     'PRIVACY_CONCERN',
-    'NO_LONGER_NEEDED'
+    'NO_LONGER_NEEDED',
+    'NO_REASON'
   )),
   created_at TEXT NOT NULL
 );

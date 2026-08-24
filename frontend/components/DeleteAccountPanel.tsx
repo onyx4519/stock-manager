@@ -9,6 +9,7 @@ const DELETION_REASONS = [
   { value: "DATA_QUALITY", label: "데이터 정확도·속도가 아쉬워요" },
   { value: "PRIVACY_CONCERN", label: "개인정보·보안 안내가 부족해요" },
   { value: "NO_LONGER_NEEDED", label: "계속 사용할 필요성을 느끼지 못했어요" },
+  { value: "NO_REASON", label: "사유 없음" },
 ] as const;
 
 type DeletionReason = (typeof DELETION_REASONS)[number]["value"];

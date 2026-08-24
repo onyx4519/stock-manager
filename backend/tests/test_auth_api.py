@@ -182,7 +182,7 @@ def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
         deleted = client.request(
             "DELETE",
             "/api/v1/auth/account",
-            json={"confirmed": True, "reason": "MISSING_CONTENT"},
+            json={"confirmed": True, "reason": "NO_REASON"},
             headers=headers,
         )
         assert deleted.status_code == 204
@@ -211,7 +211,7 @@ def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
                 )
             }
 
-        assert feedback["reason"] == "MISSING_CONTENT"
+        assert feedback["reason"] == "NO_REASON"
         assert feedback["created_at"]
         assert "user_id" not in columns
         assert "email" not in columns
@@ -283,6 +283,19 @@ def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
               'existing-user', 'existing@example.com', 'Existing User',
               '!test', '2026-08-20T00:00:00Z'
             );
+            CREATE TABLE account_deletion_feedback (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              reason TEXT NOT NULL CHECK(reason IN (
+                'MISSING_CONTENT',
+                'DIFFICULT_TO_USE',
+                'DATA_QUALITY',
+                'PRIVACY_CONCERN',
+                'NO_LONGER_NEEDED'
+              )),
+              created_at TEXT NOT NULL
+            );
+            INSERT INTO account_deletion_feedback (reason, created_at)
+            VALUES ('DATA_QUALITY', '2026-08-20T00:00:00Z');
             """
         )
 
@@ -296,7 +309,17 @@ def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
             FROM users WHERE id = 'existing-user'
             """
         ).fetchone()
+        feedback = connection.execute(
+            "SELECT reason FROM account_deletion_feedback ORDER BY id"
+        ).fetchall()
+        connection.execute(
+            """
+            INSERT INTO account_deletion_feedback (reason, created_at)
+            VALUES ('NO_REASON', '2026-08-25T00:00:00Z')
+            """
+        )
 
     assert row["personalization_consent"] == 0
     assert row["personalization_consent_at"] is None
     assert row["personalization_consent_version"] is None
+    assert [item["reason"] for item in feedback] == ["DATA_QUALITY"]

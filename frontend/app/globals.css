@@ -182,7 +182,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountDetails > div { display:grid; grid-template-columns:120px minmax(0,1fr); gap:18px; padding:14px 0; border-top:1px solid var(--border); }
 .accountDetails dt { color:var(--muted); font-size:13px; }
 .accountDetails dd { margin:0; overflow-wrap:anywhere; }
-.accountDeletionArea { width:100%; align-self:end; justify-self:center; display:grid; justify-items:center; padding-top:24px; }
+.accountDeletionArea { width:100%; align-self:end; justify-self:start; display:grid; justify-items:start; padding-top:24px; }
 .accountDeletionModal { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 32px); margin:auto; border:1px solid var(--border); border-radius:16px; padding:24px; color:var(--text); background:var(--panel); box-shadow:0 24px 70px rgba(0,0,0,.55); overflow:auto; }
 .accountDeletionModal[open] { display:grid; gap:18px; }
 .accountDeletionModal::backdrop { background:rgba(3,5,8,.76); backdrop-filter:blur(4px); }

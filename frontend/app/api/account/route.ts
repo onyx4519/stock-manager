@@ -12,6 +12,7 @@ const DELETION_REASONS = [
   "DATA_QUALITY",
   "PRIVACY_CONCERN",
   "NO_LONGER_NEEDED",
+  "NO_REASON",
 ] as const;
 
 type DeletionReason = (typeof DELETION_REASONS)[number];

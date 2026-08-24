@@ -54,6 +54,7 @@ class AccountDeletionReason(StrEnum):
     DATA_QUALITY = "DATA_QUALITY"
     PRIVACY_CONCERN = "PRIVACY_CONCERN"
     NO_LONGER_NEEDED = "NO_LONGER_NEEDED"
+    NO_REASON = "NO_REASON"
 
 
 class AccountDeletionRequest(BaseModel):

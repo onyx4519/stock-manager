@@ -510,7 +510,8 @@ export async function deleteAccount(input: {
     | "DIFFICULT_TO_USE"
     | "DATA_QUALITY"
     | "PRIVACY_CONCERN"
-    | "NO_LONGER_NEEDED";
+    | "NO_LONGER_NEEDED"
+    | "NO_REASON";
 }): Promise<void> {
   return request<void>(`${API_BASE_URL}/auth/account`, {
     method: "DELETE",

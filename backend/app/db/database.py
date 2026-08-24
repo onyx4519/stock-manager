@@ -31,6 +31,7 @@ class SQLiteDatabase:
                 connection.executescript(schema)
                 self._migrate_user_ownership(connection)
                 self._migrate_personalization_consent(connection)
+                self._migrate_account_deletion_feedback(connection)
                 connection.execute("PRAGMA optimize")
             self._initialized = True
 
@@ -157,3 +158,47 @@ class SQLiteDatabase:
             connection.execute(
                 "ALTER TABLE users ADD COLUMN personalization_consent_version TEXT"
             )
+
+    @staticmethod
+    def _migrate_account_deletion_feedback(
+        connection: sqlite3.Connection,
+    ) -> None:
+        table = connection.execute(
+            """
+            SELECT sql FROM sqlite_schema
+            WHERE type = 'table' AND name = 'account_deletion_feedback'
+            """
+        ).fetchone()
+        if table is None or "'NO_REASON'" in table["sql"]:
+            return
+
+        connection.execute(
+            """
+            ALTER TABLE account_deletion_feedback
+            RENAME TO account_deletion_feedback_legacy
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE account_deletion_feedback (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              reason TEXT NOT NULL CHECK(reason IN (
+                'MISSING_CONTENT',
+                'DIFFICULT_TO_USE',
+                'DATA_QUALITY',
+                'PRIVACY_CONCERN',
+                'NO_LONGER_NEEDED',
+                'NO_REASON'
+              )),
+              created_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO account_deletion_feedback (id, reason, created_at)
+            SELECT id, reason, created_at
+            FROM account_deletion_feedback_legacy
+            """
+        )
+        connection.execute("DROP TABLE account_deletion_feedback_legacy")
