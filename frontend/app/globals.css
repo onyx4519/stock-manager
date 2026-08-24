@@ -161,6 +161,19 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .disclosureRow:hover { border-color:var(--hover-border); background:var(--panel2); }
 .disclosureMeta { display:flex; align-items:center; justify-content:flex-end; gap:10px; color:var(--muted); font-size:12px; white-space:nowrap; }
 .externalMark { color:var(--accent); }
+.eventFeedSection { display:grid; gap:14px; }
+.eventSearchPanel { display:grid; gap:10px; }
+.eventSearchPanel > label { color:var(--text); font-size:13px; font-weight:700; }
+.eventSearchPanel > p { margin:0; color:var(--muted); font-size:11px; }
+.eventSearchControl { position:relative; display:flex; align-items:center; }
+.eventSearchControl input { width:100%; min-height:44px; border:1px solid var(--border); border-radius:11px; padding:11px 74px 11px 42px; color:var(--text); background:var(--panel2); }
+.eventSearchControl input:focus { outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:1px; }
+.eventSearchControl input::placeholder { color:var(--muted); }
+.eventSearchControl button { position:absolute; right:8px; border:0; padding:6px; color:var(--muted); background:transparent; font-size:10px; cursor:pointer; }
+.eventSearchControl button:hover { color:var(--text); }
+.eventSearchIcon { position:absolute; z-index:1; left:16px; width:13px; height:13px; border:2px solid var(--muted); border-radius:50%; pointer-events:none; }
+.eventSearchIcon::after { content:""; position:absolute; right:-5px; bottom:-3px; width:6px; height:2px; border-radius:2px; background:var(--muted); transform:rotate(45deg); transform-origin:left center; }
+.eventSearchEmpty { text-align:center; }
 .eventList { display:grid; gap:10px; }
 .eventRow { display:flex; align-items:flex-start; justify-content:space-between; gap:22px; transition:border-color .15s ease, background .15s ease; }
 .eventRow:hover { border-color:var(--hover-border); background:var(--panel2); }
