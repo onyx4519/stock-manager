@@ -1,0 +1,1 @@
+export default function WatchlistPage(){return <div className="page"><div className="pageHeader"><div><div className="eyebrow">Watchlist</div><h1>관심종목·관심분야</h1></div></div><div className="grid2"><div className="card"><h3>관심종목</h3><p className="muted">종목 직접 등록 영역</p></div><div className="card"><h3>관심분야</h3><p className="muted">AI, 반도체, 로봇 등 분야 기반 탐색 영역</p></div></div></div>}

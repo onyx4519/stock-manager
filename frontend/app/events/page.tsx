@@ -1,0 +1,1 @@
+export default function EventsPage(){return <div className="page"><div className="pageHeader"><div><div className="eyebrow">Events</div><h1>뉴스·공시·이벤트</h1></div></div><div className="card"><h3>전체 이벤트 피드</h3><p className="muted">뉴스·공시·실적·거시경제 이벤트를 한 곳에 모으고, 사용자 중요도/알림 규칙을 별도로 적용합니다.</p></div></div>}
