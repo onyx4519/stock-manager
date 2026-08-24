@@ -176,8 +176,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .authForm .consentOption input { width:auto; flex:0 0 auto; margin:3px 0 0; padding:0; accent-color:var(--accent); }
 .consentOption strong { color:var(--accent); }
 .consentDetails { color:var(--muted); font-size:11px; line-height:1.6; }
-.consentDetails summary { width:max-content; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-.consentDetails ul { margin:9px 0 7px; padding-left:18px; }
+.consentDetails ul { margin:0 0 7px; padding-left:18px; }
 .consentDetails p { margin-bottom:0; }
 .accountConsentModal { width:min(560px,calc(100vw - 32px)); max-height:calc(100vh - 32px); margin:auto; border:1px solid var(--border); border-radius:16px; padding:24px; color:var(--text); background:var(--panel); box-shadow:0 24px 70px rgba(0,0,0,.55); overflow:auto; }
 .accountConsentModal[open] { display:grid; gap:18px; }

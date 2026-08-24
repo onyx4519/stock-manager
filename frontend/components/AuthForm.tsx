@@ -194,15 +194,14 @@ export function AuthForm({
                   <strong>[필수]</strong> 계정 생성 및 서비스 이용에 동의합니다.
                 </span>
               </label>
-              <details className="consentDetails">
-                <summary>필수 동의 내용 보기</summary>
+              <div className="consentDetails">
                 <ul>
                   <li>목적: 회원 계정 생성 및 로그인·회원 서비스 제공</li>
                   <li>처리 정보: 이메일, 사용자명, 생년월일, 성별 및 암호화된 인증정보</li>
                   <li>보유·이용 기간: 회원 탈퇴 시까지</li>
                 </ul>
                 <p>동의하지 않으면 계정을 생성할 수 없습니다.</p>
-              </details>
+              </div>
             </section>
 
             <section className="accountConsentSection">
@@ -218,15 +217,14 @@ export function AuthForm({
                   동의합니다.
                 </span>
               </label>
-              <details className="consentDetails">
-                <summary>선택 동의 내용 보기</summary>
+              <div className="consentDetails">
                 <ul>
                   <li>목적: 사용자의 관심에 맞는 종목 탐색 정보 제공</li>
                   <li>활용 기록: 검색어, 조회 종목, 관심종목 및 서비스 이용 기록</li>
                   <li>보유·이용 기간: 동의 철회 또는 회원 탈퇴 시까지</li>
                 </ul>
                 <p>동의하지 않아도 계정 생성과 기본 기능 이용이 가능합니다.</p>
-              </details>
+              </div>
             </section>
           </div>
 
