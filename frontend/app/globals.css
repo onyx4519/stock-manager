@@ -203,7 +203,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountDetails > div { display:grid; grid-template-columns:120px minmax(0,1fr); gap:18px; padding:14px 0; border-top:1px solid var(--border); }
 .accountDetails dt { color:var(--muted); font-size:13px; }
 .accountDetails dd { margin:0; overflow-wrap:anywhere; }
-.accountDeletionArea { width:100%; align-self:end; justify-self:start; display:grid; justify-items:start; padding-top:24px; }
+.accountDeletionArea { width:100%; display:grid; justify-items:start; border-top:1px solid var(--border); padding-top:16px; }
 .notificationSettingsCard { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; border-top:1px solid var(--border); padding:16px 0 0; }
 .notificationSettingsCard h2 { margin-bottom:4px; font-size:16px; }
 .notificationSettingsCard p { margin-bottom:0; font-size:12px; line-height:1.45; }

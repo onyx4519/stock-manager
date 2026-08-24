@@ -67,9 +67,8 @@ export default async function AccountPage() {
           </div>
         </dl>
         <NotificationSettingsForm enabled={user.serviceNotificationConsent} />
+        <DeleteAccountPanel userId={user.id} />
       </section>
-
-      <DeleteAccountPanel userId={user.id} />
     </div>
   );
 }
