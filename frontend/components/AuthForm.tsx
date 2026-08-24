@@ -151,12 +151,13 @@ export function AuthForm({
       </label>
       {!registering && (
         <>
-          <div className="loginAttemptNotice" role="status">
-            <strong>비밀번호를 5회 틀리면 비밀번호 변경이 필요합니다.</strong>
-            {typeof state?.failedLoginAttempts === "number" && (
-              <span>{state.failedLoginAttempts}/5회 틀렸습니다.</span>
+          {typeof state?.failedLoginAttempts === "number"
+            && state.failedLoginAttempts >= 1 && (
+              <p className="loginAttemptNotice" role="status">
+                <span>비밀번호를 5회 틀리면 비밀번호 변경이 필요합니다.</span>
+                <small>{state.failedLoginAttempts}/5회 틀렸습니다.</small>
+              </p>
             )}
-          </div>
           <label className="autoLoginOption">
             <input name="rememberMe" type="checkbox" />
             <span>

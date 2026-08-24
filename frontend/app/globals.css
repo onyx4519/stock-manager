@@ -197,9 +197,8 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .authForm .autoLoginOption input { width:auto; flex:0 0 auto; margin:3px 0 0; padding:0; accent-color:var(--accent); }
 .autoLoginOption span { display:grid; gap:3px; }
 .autoLoginOption small { color:var(--muted); font-size:11px; font-weight:400; }
-.loginAttemptNotice { display:grid; gap:4px; border:1px solid #6e5827; border-radius:10px; padding:11px 12px; color:#ffd479; background:color-mix(in srgb,#6e5827 15%,transparent); font-size:11px; line-height:1.5; }
-.loginAttemptNotice strong { font-size:12px; }
-.loginAttemptNotice span { color:#ffb4b4; font-weight:700; }
+.loginAttemptNotice { display:grid; gap:3px; margin:0; color:var(--text); font-size:12px; line-height:1.5; }
+.loginAttemptNotice small { color:#ffb4b4; font-size:11px; font-weight:700; }
 .birthDateField { min-width:0; margin:0; padding:0; border:0; }
 .birthDateField legend { margin-bottom:7px; padding:0; color:var(--muted); font-size:12px; }
 .birthDateInputs { display:grid; grid-template-columns:1.15fr 1fr .85fr; gap:10px; }
