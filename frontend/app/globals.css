@@ -37,6 +37,10 @@ h3 { font-size:16px; margin-bottom:8px; }
 .stat { display:grid; gap:8px; }
 .stat strong { font-size:24px; }
 .price { font-size:30px; font-weight:800; margin-top:18px; }
+.quoteChange { margin-top:4px; font-size:14px; font-weight:700; }
+.quoteChange-up { color:#ff6673; }
+.quoteChange-down { color:#5b8fff; }
+.quoteChange-flat { color:var(--muted); }
 .rowBetween { display:flex; align-items:flex-start; justify-content:space-between; }
 .gap { gap:12px; }
 .badge { display:inline-flex; align-items:center; height:26px; padding:0 9px; border-radius:999px; font-size:11px; border:1px solid var(--border); }

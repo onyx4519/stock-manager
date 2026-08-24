@@ -28,7 +28,11 @@ export default async function DashboardPage() {
         ) : quoteResult.quotes.length === 0 ? (
           <ApiMessage title="표시할 시세가 없습니다" message="MASSIVE_SYMBOLS 설정을 확인해 주세요." />
         ) : (
-          <div className="grid2">{quoteResult.quotes.map(q => <QuoteCard key={q.symbol} quote={q} />)}</div>
+          <div className="grid2">
+            {quoteResult.quotes.map((quote) => (
+              <QuoteCard colorizeChange key={quote.symbol} quote={quote} />
+            ))}
+          </div>
         )}
       </section>
 
