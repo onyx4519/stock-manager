@@ -35,6 +35,8 @@ export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
+  personalizationConsent: boolean;
+  personalizationConsentAt: string | null;
   createdAt: string;
 };
 

@@ -37,6 +37,8 @@ type BackendAuthUser = {
   id: string;
   email: string;
   display_name: string;
+  personalization_consent: boolean;
+  personalization_consent_at: string | null;
   created_at: string;
 };
 
@@ -292,6 +294,8 @@ function normalizeAuthUser(user: BackendAuthUser): AuthUser {
     id: user.id,
     email: user.email,
     displayName: user.display_name,
+    personalizationConsent: user.personalization_consent,
+    personalizationConsentAt: user.personalization_consent_at,
     createdAt: user.created_at,
   };
 }
@@ -465,6 +469,7 @@ export async function registerUser(input: {
   email: string;
   display_name: string;
   password: string;
+  personalization_consent: boolean;
 }): Promise<AuthSession> {
   const session = await request<BackendAuthSession>(`${API_BASE_URL}/auth/register`, {
     method: "POST",

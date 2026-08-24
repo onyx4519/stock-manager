@@ -14,6 +14,7 @@ class DuplicateUserError(ValueError):
 
 class AuthRepository:
     PASSWORD_ITERATIONS = 600_000
+    PERSONALIZATION_CONSENT_VERSION = "2026-08-25-v1"
     SESSION_DAYS = 30
 
     def __init__(self, database: SQLiteDatabase) -> None:
@@ -25,9 +26,16 @@ class AuthRepository:
         email: str,
         display_name: str,
         password: str,
+        personalization_consent: bool = False,
     ) -> AuthUser:
         user_id = str(uuid.uuid4())
         created_at = datetime.now(timezone.utc).isoformat()
+        consented_at = created_at if personalization_consent else None
+        consent_version = (
+            self.PERSONALIZATION_CONSENT_VERSION
+            if personalization_consent
+            else None
+        )
         password_hash = self._hash_password(password)
         try:
             with self.database.connection() as connection:
@@ -38,10 +46,21 @@ class AuthRepository:
                 connection.execute(
                     """
                     INSERT INTO users (
-                      id, email, display_name, password_hash, created_at
-                    ) VALUES (?, ?, ?, ?, ?)
+                      id, email, display_name, password_hash,
+                      personalization_consent, personalization_consent_at,
+                      personalization_consent_version, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (user_id, email.casefold(), display_name, password_hash, created_at),
+                    (
+                        user_id,
+                        email.casefold(),
+                        display_name,
+                        password_hash,
+                        int(personalization_consent),
+                        consented_at,
+                        consent_version,
+                        created_at,
+                    ),
                 )
                 if real_users == 0:
                     connection.execute(
@@ -64,7 +83,9 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, password_hash, created_at
+                SELECT id, email, display_name, password_hash,
+                       personalization_consent, personalization_consent_at,
+                       created_at
                 FROM users
                 WHERE email = ? COLLATE NOCASE AND id != ?
                 """,
@@ -78,7 +99,8 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, created_at
+                SELECT id, email, display_name, personalization_consent,
+                       personalization_consent_at, created_at
                 FROM users WHERE id = ? AND id != ?
                 """,
                 (user_id, self.database.LEGACY_USER_ID),
@@ -110,7 +132,9 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT users.id, users.email, users.display_name, users.created_at
+                SELECT users.id, users.email, users.display_name,
+                       users.personalization_consent,
+                       users.personalization_consent_at, users.created_at
                 FROM sessions
                 JOIN users ON users.id = sessions.user_id
                 WHERE sessions.token_hash = ? AND sessions.expires_at > ?

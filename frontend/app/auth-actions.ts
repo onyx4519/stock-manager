@@ -55,6 +55,7 @@ export async function registerAction(
     const session = await registerUser({
       ...credentials(formData),
       display_name: String(formData.get("displayName") ?? "").trim(),
+      personalization_consent: formData.get("personalizationConsent") === "on",
     });
     (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);
   } catch (error) {

@@ -42,6 +42,14 @@ export default async function AccountPage() {
             <dt>가입일</dt>
             <dd>{formatJoinedAt(user.createdAt)}</dd>
           </div>
+          <div>
+            <dt>맞춤형 정보</dt>
+            <dd>
+              {user.personalizationConsent
+                ? `선택 동의함 · ${formatJoinedAt(user.personalizationConsentAt ?? user.createdAt)}`
+                : "선택 동의하지 않음"}
+            </dd>
+          </div>
         </dl>
       </section>
 

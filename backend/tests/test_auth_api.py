@@ -51,10 +51,24 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "email": "second@example.com",
                 "display_name": "Second User",
                 "password": "safe-password-2",
+                "personalization_consent": True,
             },
         )
         assert first.status_code == 201
         assert second.status_code == 201
+        assert first.json()["user"]["personalization_consent"] is False
+        assert first.json()["user"]["personalization_consent_at"] is None
+        assert second.json()["user"]["personalization_consent"] is True
+        assert second.json()["user"]["personalization_consent_at"]
+        with database.connection() as connection:
+            consent_version = connection.execute(
+                """
+                SELECT personalization_consent_version
+                FROM users WHERE id = ?
+                """,
+                (second.json()["user"]["id"],),
+            ).fetchone()[0]
+        assert consent_version == AuthRepository.PERSONALIZATION_CONSENT_VERSION
         first_headers = {
             "Authorization": f"Bearer {first.json()['access_token']}"
         }
@@ -77,6 +91,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
         me = client.get("/api/v1/auth/me", headers=first_headers)
         assert me.status_code == 200
         assert me.json()["email"] == "first@example.com"
+        assert me.json()["personalization_consent"] is False
         assert client.post("/api/v1/auth/logout", headers=first_headers).status_code == 204
         assert client.get("/api/v1/auth/me", headers=first_headers).status_code == 401
     finally:
@@ -250,3 +265,38 @@ def test_legacy_records_are_preserved_and_claimed_by_first_user(tmp_path):
             for row in connection.execute("PRAGMA table_info('transactions')")
         }
     assert "user_id" in columns
+
+
+def test_existing_users_receive_safe_personalization_consent_defaults(tmp_path):
+    path = tmp_path / "existing-users.db"
+    with sqlite3.connect(path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE users (
+              id TEXT PRIMARY KEY,
+              email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+              display_name TEXT NOT NULL,
+              password_hash TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
+            INSERT INTO users VALUES (
+              'existing-user', 'existing@example.com', 'Existing User',
+              '!test', '2026-08-20T00:00:00Z'
+            );
+            """
+        )
+
+    database = SQLiteDatabase(path)
+    database.initialize()
+    with database.connection() as connection:
+        row = connection.execute(
+            """
+            SELECT personalization_consent, personalization_consent_at,
+                   personalization_consent_version
+            FROM users WHERE id = 'existing-user'
+            """
+        ).fetchone()
+
+    assert row["personalization_consent"] == 0
+    assert row["personalization_consent_at"] is None
+    assert row["personalization_consent_version"] is None

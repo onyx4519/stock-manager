@@ -3,6 +3,10 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL COLLATE NOCASE UNIQUE,
   display_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
+  personalization_consent INTEGER NOT NULL DEFAULT 0
+    CHECK(personalization_consent IN (0, 1)),
+  personalization_consent_at TEXT,
+  personalization_consent_version TEXT,
   created_at TEXT NOT NULL
 );
 

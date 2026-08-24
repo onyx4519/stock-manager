@@ -21,6 +21,7 @@ class UserCredentials(BaseModel):
 
 class UserRegister(UserCredentials):
     display_name: str = Field(min_length=2, max_length=50)
+    personalization_consent: bool = False
 
     @field_validator("display_name")
     @classmethod
@@ -35,6 +36,8 @@ class AuthUser(BaseModel):
     id: str
     email: str
     display_name: str
+    personalization_consent: bool = False
+    personalization_consent_at: datetime | None = None
     created_at: datetime
 
 

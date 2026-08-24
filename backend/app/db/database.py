@@ -30,6 +30,7 @@ class SQLiteDatabase:
                 connection.execute("PRAGMA foreign_keys = ON")
                 connection.executescript(schema)
                 self._migrate_user_ownership(connection)
+                self._migrate_personalization_consent(connection)
                 connection.execute("PRAGMA optimize")
             self._initialized = True
 
@@ -132,3 +133,27 @@ class SQLiteDatabase:
             ON watchlist_items(user_id, created_at DESC, symbol)
             """
         )
+
+    @staticmethod
+    def _migrate_personalization_consent(
+        connection: sqlite3.Connection,
+    ) -> None:
+        user_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info('users')")
+        }
+        if "personalization_consent" not in user_columns:
+            connection.execute(
+                """
+                ALTER TABLE users ADD COLUMN personalization_consent
+                INTEGER NOT NULL DEFAULT 0
+                CHECK(personalization_consent IN (0, 1))
+                """
+            )
+        if "personalization_consent_at" not in user_columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN personalization_consent_at TEXT"
+            )
+        if "personalization_consent_version" not in user_columns:
+            connection.execute(
+                "ALTER TABLE users ADD COLUMN personalization_consent_version TEXT"
+            )

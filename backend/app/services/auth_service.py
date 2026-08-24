@@ -21,6 +21,7 @@ class AuthService:
             email=str(payload.email),
             display_name=payload.display_name,
             password=payload.password,
+            personalization_consent=payload.personalization_consent,
         )
         return self._create_session(user)
 
