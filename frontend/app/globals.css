@@ -16,10 +16,25 @@ button, input, select { font:inherit; }
 .accountLink, .accountButton { color:var(--muted); font-size:12px; white-space:nowrap; }
 .accountLink { border:1px solid var(--border); border-radius:999px; padding:7px 10px; }
 .accountStatus { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; white-space:nowrap; }
-.notificationLink { position:relative; display:grid; place-items:center; width:34px; height:34px; border:1px solid var(--border); border-radius:50%; color:var(--muted); }
+.notificationMenu { position:relative; }
+.notificationLink { position:relative; display:grid; place-items:center; width:34px; height:34px; border:1px solid var(--border); border-radius:50%; padding:0; color:var(--muted); background:transparent; cursor:pointer; }
 .notificationLink:hover { color:var(--text); border-color:#3d5279; }
 .notificationLink svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .notificationCount { position:absolute; top:-6px; right:-7px; min-width:18px; height:18px; display:grid; place-items:center; padding:0 4px; border:2px solid var(--bg); border-radius:999px; background:#ff6673; color:#fff; font-size:9px; font-weight:800; }
+.notificationPopover { position:absolute; z-index:50; top:calc(100% + 10px); right:0; width:min(360px,calc(100vw - 28px)); border:1px solid var(--border); border-radius:14px; background:var(--panel); box-shadow:0 18px 48px rgba(0,0,0,.5); overflow:hidden; }
+.notificationPopoverHeader { display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid var(--border); padding:13px 14px; }
+.notificationPopoverHeader strong { color:var(--text); font-size:14px; }
+.notificationPopoverHeader a { color:var(--accent); font-size:11px; }
+.notificationPreviewList { display:grid; max-height:370px; overflow-y:auto; }
+.notificationPreviewItem { display:grid; gap:5px; border-bottom:1px solid var(--border); padding:12px 14px; white-space:normal; }
+.notificationPreviewItem:last-child { border-bottom:0; }
+.notificationPreviewItem > div { display:flex; align-items:center; gap:7px; }
+.notificationPreviewItem strong { color:var(--text); font-size:12px; line-height:1.4; }
+.notificationPreviewItem p { margin:0; color:var(--muted); font-size:11px; line-height:1.5; }
+.notificationPreviewItem time { color:#718096; font-size:10px; }
+.notificationPreviewItemRead { opacity:.7; }
+.notificationUnreadDot { width:6px; height:6px; flex:0 0 auto; border-radius:50%; background:#ff6673; }
+.notificationPreviewEmpty { margin:0; padding:24px 14px; color:var(--muted); font-size:12px; text-align:center; }
 .accountNameLink, .accountDeleteLink, .accountTextButton { color:var(--text); padding:4px; }
 .accountNameLink:hover, .accountDeleteLink:hover, .accountTextButton:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .accountDeleteLink, .accountTextButton { border:0; background:transparent; font-size:12px; cursor:pointer; }
