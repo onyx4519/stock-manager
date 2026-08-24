@@ -69,7 +69,7 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
   return (
     <section
       className={expanded
-        ? "card dangerZone accountDeletionArea accountDeletionExpanded"
+        ? "accountDeletionArea accountDeletionExpanded"
         : "accountDeletionArea"}
     >
       {step === "idle" && (
@@ -83,8 +83,7 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
       )}
 
       {expanded && (
-        <div>
-          <div className="eyebrow dangerEyebrow">Danger zone</div>
+        <div className="accountDeletionHeading">
           <h2>회원 탈퇴</h2>
           <p className="muted">
             계정과 저장된 거래·관심종목 데이터가 삭제되며 복구할 수 없습니다.
@@ -97,10 +96,14 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
           <strong>정말 회원 탈퇴에 동의하시나요?</strong>
           <p>탈퇴를 계속하면 다음 단계에서 서비스의 부족했던 점을 선택합니다.</p>
           <div className="deletionActions">
-            <button className="secondaryButton" onClick={cancel} type="button">
+            <button className="accountTextButton" onClick={cancel} type="button">
               취소
             </button>
-            <button className="dangerButton" onClick={() => setStep("reason")} type="button">
+            <button
+              className="accountTextButton accountTextDanger"
+              onClick={() => setStep("reason")}
+              type="button"
+            >
               동의하고 계속
             </button>
           </div>
@@ -129,11 +132,16 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
           </p>
           {message && <p className="formMessageText" role="alert">{message}</p>}
           <div className="deletionActions">
-            <button className="secondaryButton" disabled={pending} onClick={cancel} type="button">
+            <button
+              className="accountTextButton"
+              disabled={pending}
+              onClick={cancel}
+              type="button"
+            >
               취소
             </button>
             <button
-              className="dangerButton"
+              className="accountTextButton accountTextDanger"
               disabled={!reason || pending}
               onClick={submitDeletion}
               type="button"
