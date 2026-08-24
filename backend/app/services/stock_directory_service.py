@@ -10,6 +10,7 @@ from app.schemas.market import (
     StockSearchResponse,
 )
 from app.services.market_service import MarketService
+from app.services.stock_aliases import find_us_tickers_by_korean_alias
 
 
 class StockDirectoryService:
@@ -44,8 +45,10 @@ class StockDirectoryService:
         items: list[StockSearchItem] = []
         sources: list[str] = []
         warnings: list[str] = []
-        is_domestic_term = term.isdigit() or any("가" <= char <= "힣" for char in term)
-        per_source_limit = max(1, limit if is_domestic_term else (limit + 1) // 2)
+        contains_hangul = any("가" <= char <= "힣" for char in term)
+        contains_latin = any("a" <= char.casefold() <= "z" for char in term)
+        per_source_limit = max(1, limit)
+        preferred_symbols: list[str] = []
 
         if settings.market_provider in {"hybrid", "kis"}:
             domestic: list[dict[str, str]] = []
@@ -59,14 +62,16 @@ class StockDirectoryService:
                     used_kis_directory = True
                     sources.append("KIS 종목 마스터")
                 except MarketProviderError:
-                    warnings.append("KIS 종목 마스터를 불러오지 못해 OpenDART 목록을 사용했습니다.")
-            if not used_kis_directory:
+                    pass
+
+            used_dart_directory = False
+            if contains_latin or not used_kis_directory:
                 try:
                     dart_companies = self.dart_provider.search_listed_companies(
                         term,
-                        limit=per_source_limit * 2,
+                        limit=per_source_limit,
                     )
-                    domestic = [
+                    domestic.extend(
                         {
                             "symbol": str(company["stock_code"]),
                             "company_name": str(company["corp_name"]),
@@ -75,10 +80,22 @@ class StockDirectoryService:
                         }
                         for company in dart_companies
                         if str(company["stock_code"]).isdigit()
-                    ][:per_source_limit]
-                    sources.append("OpenDART 대체 목록")
+                    )
+                    used_dart_directory = True
+                    sources.append("OpenDART 영문 기업명")
                 except DartProviderError:
-                    warnings.append("국내 종목 디렉터리를 불러오지 못했습니다.")
+                    if contains_latin and used_kis_directory:
+                        warnings.append(
+                            "OpenDART 영문 기업명 목록을 불러오지 못했습니다."
+                        )
+
+            if not used_kis_directory and used_dart_directory:
+                warnings.append(
+                    "KIS 종목 마스터를 불러오지 못해 OpenDART 목록을 사용했습니다."
+                )
+            elif not used_kis_directory and not used_dart_directory:
+                warnings.append("국내 종목 디렉터리를 불러오지 못했습니다.")
+
             items.extend(
                 StockSearchItem(
                     symbol=item["symbol"],
@@ -90,15 +107,34 @@ class StockDirectoryService:
                 for item in domestic
             )
 
-        if not is_domestic_term and settings.market_provider in {"hybrid", "massive"}:
+        if settings.market_provider in {"hybrid", "massive"}:
+            alias_symbols = (
+                find_us_tickers_by_korean_alias(term, limit=per_source_limit)
+                if contains_hangul
+                else ()
+            )
+            overseas_queries = alias_symbols if contains_hangul else (term,)
+            preferred_symbols.extend(alias_symbols)
+
             if self.massive_provider is None:
-                warnings.append("미국 종목 디렉터리를 사용할 수 없습니다.")
+                if overseas_queries:
+                    warnings.append("미국 종목 디렉터리를 사용할 수 없습니다.")
             else:
                 try:
-                    overseas = self.massive_provider.search_tickers(
-                        term,
-                        limit=per_source_limit,
-                    )
+                    overseas: list[dict[str, str]] = []
+                    for overseas_query in overseas_queries:
+                        matches = self.massive_provider.search_tickers(
+                            overseas_query,
+                            limit=per_source_limit,
+                        )
+                        if contains_hangul:
+                            matches = [
+                                item
+                                for item in matches
+                                if item["symbol"].casefold()
+                                == overseas_query.casefold()
+                            ]
+                        overseas.extend(matches)
                     items.extend(
                         StockSearchItem(
                             symbol=item["symbol"],
@@ -109,7 +145,10 @@ class StockDirectoryService:
                         )
                         for item in overseas
                     )
-                    sources.append("Massive")
+                    if overseas_queries:
+                        sources.append(
+                            "Massive 한글 별칭" if contains_hangul else "Massive"
+                        )
                 except MarketProviderError:
                     warnings.append("미국 종목 디렉터리를 불러오지 못했습니다.")
 
@@ -128,12 +167,21 @@ class StockDirectoryService:
                 existing.change_percent = exact_quote.change_percent
                 existing.timestamp = exact_quote.timestamp
                 existing.data_status = exact_quote.data_status
-        items = self._deduplicate_and_rank(items, term)[:limit]
+        items = self._deduplicate_and_rank(
+            items,
+            term,
+            preferred_symbols=preferred_symbols,
+        )[:limit]
+        if contains_hangul and not items and not preferred_symbols:
+            warnings.append(
+                "미국 종목의 한글명은 등록된 별칭만 검색할 수 있습니다. "
+                "찾지 못하면 영문명이나 티커를 입력해 주세요."
+            )
         return StockSearchResponse(
             query=term,
             total_count=len(items),
             items=items,
-            sources=sources,
+            sources=list(dict.fromkeys(sources)),
             warnings=warnings,
         )
 
@@ -161,13 +209,21 @@ class StockDirectoryService:
     def _deduplicate_and_rank(
         items: list[StockSearchItem],
         term: str,
+        *,
+        preferred_symbols: list[str] | None = None,
     ) -> list[StockSearchItem]:
         unique = {item.symbol: item for item in items}
         folded = term.casefold()
+        preferred = {
+            symbol.casefold(): index
+            for index, symbol in enumerate(preferred_symbols or [])
+        }
 
         def rank(item: StockSearchItem) -> tuple[int, int, str]:
             symbol = item.symbol.casefold()
             name = item.company_name.casefold()
+            if symbol in preferred:
+                return (-1, preferred[symbol], item.symbol)
             if folded == symbol:
                 return (0, len(name), item.symbol)
             if folded == name:

@@ -8,8 +8,11 @@ Base URL: `/api/v1`
 
 ## Stocks
 - `GET /api/v1/stocks?q={query}`
-- Searches by company name or symbol in the current provider.
-- Searches the symbols configured through `KIS_SYMBOLS` and `MASSIVE_SYMBOLS`.
+- Searches the KIS KOSPI/KOSDAQ directory, OpenDART Korean and English company
+  names, and Massive's active U.S. stock directory.
+- Registered Korean aliases for U.S. stocks resolve to Massive tickers before
+  the provider lookup. `KIS_SYMBOLS` and `MASSIVE_SYMBOLS` only control the
+  initial no-query list.
 - Every result keeps its provider and data-status label.
 
 ## Watchlist

@@ -79,10 +79,12 @@ def test_search_listed_companies_excludes_private_companies():
     provider = DartProvider(api_key="test-key", client=FakeClient(corp_code_archive()))
 
     by_name = provider.search_listed_companies("삼성")
+    by_english_name = provider.search_listed_companies("Samsung Electronics")
     by_code = provider.search_listed_companies("005930")
     private = provider.search_listed_companies("비상장")
 
     assert [item["stock_code"] for item in by_name] == ["005930"]
+    assert [item["stock_code"] for item in by_english_name] == ["005930"]
     assert [item["corp_name"] for item in by_code] == ["삼성전자"]
     assert private == []
 

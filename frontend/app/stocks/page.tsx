@@ -29,7 +29,7 @@ export default async function StocksPage({
         <div>
           <div className="eyebrow">Stocks</div>
           <h1>종목 검색</h1>
-          <p className="muted">국내 상장회사와 미국 활성 종목 전체에서 검색한 뒤 필요한 시세만 조회합니다.</p>
+          <p className="muted">국내 기업의 한글·영문명과 미국 종목의 한글 별칭·영문명·티커로 검색할 수 있습니다.</p>
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export default async function StocksPage({
             defaultValue={query}
             id="stock-search"
             name="q"
-            placeholder="예: 삼성전자, SK하이닉스, NVIDIA, NVDA"
+            placeholder="예: 삼성전자, Samsung Electronics, 조비 에비에이션, JOBY"
             type="search"
           />
           <button className="primaryButton" type="submit">검색</button>
