@@ -64,20 +64,32 @@ export function DeleteAccountPanel({ userId }: { userId: string }) {
     }
   };
 
-  return (
-    <section className="card dangerZone">
-      <div>
-        <div className="eyebrow dangerEyebrow">Danger zone</div>
-        <h2>회원 탈퇴</h2>
-        <p className="muted">
-          계정과 저장된 거래·관심종목 데이터가 삭제되며 복구할 수 없습니다.
-        </p>
-      </div>
+  const expanded = step !== "idle";
 
+  return (
+    <section
+      className={expanded
+        ? "card dangerZone accountDeletionArea accountDeletionExpanded"
+        : "accountDeletionArea"}
+    >
       {step === "idle" && (
-        <button className="dangerButton" onClick={() => setStep("confirm")} type="button">
+        <button
+          className="accountDeleteLink"
+          onClick={() => setStep("confirm")}
+          type="button"
+        >
           회원 탈퇴
         </button>
+      )}
+
+      {expanded && (
+        <div>
+          <div className="eyebrow dangerEyebrow">Danger zone</div>
+          <h2>회원 탈퇴</h2>
+          <p className="muted">
+            계정과 저장된 거래·관심종목 데이터가 삭제되며 복구할 수 없습니다.
+          </p>
+        </div>
       )}
 
       {step === "confirm" && (

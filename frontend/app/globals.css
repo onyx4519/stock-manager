@@ -16,8 +16,9 @@ button, input, select { font:inherit; }
 .accountLink, .accountButton { color:var(--muted); font-size:12px; white-space:nowrap; }
 .accountLink { border:1px solid var(--border); border-radius:999px; padding:7px 10px; }
 .accountStatus { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; white-space:nowrap; }
-.accountNameLink { color:var(--text); padding:4px; }
-.accountNameLink:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+.accountNameLink, .accountDeleteLink { color:var(--text); padding:4px; }
+.accountNameLink:hover, .accountDeleteLink:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+.accountDeleteLink { border:0; background:transparent; font-size:12px; cursor:pointer; }
 .accountButton { border:0; background:transparent; padding:4px; cursor:pointer; }
 .search { width:100%; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:12px; padding:11px 14px; }
 .testBanner { font-size:12px; color:#ffd479; border:1px solid #6e5827; padding:6px 8px; border-radius:999px; white-space:nowrap; }
@@ -164,7 +165,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .authForm input:focus { outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:1px; }
 .formMessageText { color:#ffb4b4; font-size:12px; margin:0; }
 .authSwitch { color:var(--muted); font-size:12px; text-align:center; margin:0; }
-.accountPage { width:min(760px,100%); margin:0 auto; }
+.accountPage { width:min(760px,100%); min-height:calc(100vh - 70px); margin:0 auto; grid-template-rows:auto auto 1fr; }
 .accountIntro { margin:12px 0 0; }
 .accountDetailsCard { display:grid; gap:16px; }
 .accountDetailsCard h2 { margin-bottom:0; }
@@ -172,6 +173,8 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountDetails > div { display:grid; grid-template-columns:120px minmax(0,1fr); gap:18px; padding:14px 0; border-top:1px solid var(--border); }
 .accountDetails dt { color:var(--muted); font-size:13px; }
 .accountDetails dd { margin:0; overflow-wrap:anywhere; }
+.accountDeletionArea { width:100%; align-self:end; justify-self:center; display:grid; justify-items:center; padding-top:24px; }
+.accountDeletionExpanded { justify-self:stretch; justify-items:stretch; padding-top:18px; }
 .dangerZone { display:grid; gap:18px; border-color:#713a3a; }
 .dangerZone h2 { margin-bottom:8px; }
 .dangerZone p { margin-bottom:0; line-height:1.55; }
@@ -192,7 +195,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
   .topbar { padding:12px 14px; }
   .topbarSearch { width:100%; min-width:0; }
   .topbarActions { gap:6px; }
-  .accountNameLink { display:none; }
+  .accountStatus .accountNameLink { display:none; }
   .testBanner { display:none; }
   .page { padding:18px 14px 26px; gap:22px; }
   .pageHeader { align-items:flex-start; flex-direction:column; }
@@ -215,6 +218,7 @@ button:disabled { cursor:not-allowed; opacity:.55; }
   .eventRow { flex-direction:column; }
   .eventMeta { text-align:left; white-space:normal; }
   .analysisSummaryGrid, .analysisMetricGrid { grid-template-columns:1fr; }
+  .accountPage { min-height:calc(100vh - 138px); }
   .accountDetails > div { grid-template-columns:1fr; gap:6px; }
   .deletionActions { align-items:stretch; flex-direction:column-reverse; }
   .mobileNav { position:fixed; z-index:30; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid var(--border); background:#0e1115; }
