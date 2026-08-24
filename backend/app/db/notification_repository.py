@@ -16,14 +16,21 @@ class NotificationRepository:
                        notifications.title, notifications.message,
                        notifications.created_at, notification_reads.read_at
                 FROM notifications
+                JOIN users AS viewer ON viewer.id = ?
                 LEFT JOIN notification_reads
                   ON notification_reads.notification_id = notifications.id
                  AND notification_reads.user_id = ?
-                WHERE notifications.user_id IS NULL
-                   OR notifications.user_id = ?
+                WHERE (
+                    notifications.user_id IS NULL
+                    OR notifications.user_id = ?
+                  )
+                  AND (
+                    notifications.audience = 'ALL'
+                    OR viewer.role = 'ADMIN'
+                  )
                 ORDER BY notifications.created_at DESC, notifications.id DESC
                 """,
-                (user_id, user_id),
+                (user_id, user_id, user_id),
             ).fetchall()
         return [NotificationItem.model_validate(dict(row)) for row in rows]
 
@@ -59,9 +66,17 @@ class NotificationRepository:
             visible = connection.execute(
                 """
                 SELECT 1 FROM notifications
-                WHERE id = ? AND (user_id IS NULL OR user_id = ?)
+                WHERE id = ?
+                  AND (user_id IS NULL OR user_id = ?)
+                  AND (
+                    audience = 'ALL'
+                    OR EXISTS (
+                      SELECT 1 FROM users
+                      WHERE users.id = ? AND users.role = 'ADMIN'
+                    )
+                  )
                 """,
-                (notification_id, user_id),
+                (notification_id, user_id, user_id),
             ).fetchone()
             if visible is None:
                 return False
@@ -84,9 +99,16 @@ class NotificationRepository:
                 INSERT INTO notification_reads (notification_id, user_id, read_at)
                 SELECT id, ?, ?
                 FROM notifications
-                WHERE user_id IS NULL OR user_id = ?
+                WHERE (user_id IS NULL OR user_id = ?)
+                  AND (
+                    audience = 'ALL'
+                    OR EXISTS (
+                      SELECT 1 FROM users
+                      WHERE users.id = ? AND users.role = 'ADMIN'
+                    )
+                  )
                 ON CONFLICT(notification_id, user_id)
                 DO UPDATE SET read_at = excluded.read_at
                 """,
-                (user_id, now, user_id),
+                (user_id, now, user_id, user_id),
             )

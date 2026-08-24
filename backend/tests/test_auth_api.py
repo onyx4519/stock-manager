@@ -798,6 +798,22 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
               'existing-user', 'existing@example.com', 'Existing User',
               '!test', '2026-08-20T00:00:00Z'
             );
+            CREATE TABLE notifications (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              notification_key TEXT NOT NULL UNIQUE,
+              user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+              category TEXT NOT NULL CHECK(category IN ('NOTICE', 'ACCOUNT', 'SERVICE')),
+              title TEXT NOT NULL,
+              message TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            );
+            INSERT INTO notifications (
+              notification_key, user_id, category, title, message, created_at
+            ) VALUES (
+              'system:notification-center-launched', NULL, 'NOTICE',
+              '내부 알림센터가 준비되었습니다', '테스트 공지',
+              '2026-08-25T00:00:00+09:00'
+            );
             CREATE TABLE account_deletion_feedback (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               reason TEXT NOT NULL CHECK(reason IN (
@@ -837,6 +853,12 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
         feedback = connection.execute(
             "SELECT reason FROM account_deletion_feedback ORDER BY id"
         ).fetchall()
+        notification = connection.execute(
+            """
+            SELECT audience FROM notifications
+            WHERE notification_key = 'system:notification-center-launched'
+            """
+        ).fetchone()
         connection.execute(
             """
             INSERT INTO account_deletion_feedback (reason, created_at)
@@ -847,6 +869,7 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
     assert row["birth_date"] is None
     assert row["gender"] == "UNSPECIFIED"
     assert row["role"] == "USER"
+    assert notification["audience"] == "ADMIN"
     assert row["failed_login_attempts"] == 0
     assert row["password_change_required"] == 0
     assert row["last_failed_login_at"] is None

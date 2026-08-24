@@ -32,6 +32,7 @@ class SQLiteDatabase:
                 self._migrate_user_ownership(connection)
                 self._migrate_basic_profile(connection)
                 self._migrate_user_roles(connection)
+                self._migrate_notification_audience(connection)
                 self._migrate_login_security(connection)
                 self._migrate_account_creation_consent(connection)
                 self._migrate_privacy_and_notification_consents(connection)
@@ -169,6 +170,27 @@ class SQLiteDatabase:
                 CHECK(role IN ('USER', 'ADMIN'))
                 """
             )
+
+    @staticmethod
+    def _migrate_notification_audience(connection: sqlite3.Connection) -> None:
+        notification_columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info('notifications')")
+        }
+        if "audience" not in notification_columns:
+            connection.execute(
+                """
+                ALTER TABLE notifications ADD COLUMN audience TEXT NOT NULL
+                DEFAULT 'ALL' CHECK(audience IN ('ALL', 'ADMIN'))
+                """
+            )
+        connection.execute(
+            """
+            UPDATE notifications
+            SET audience = 'ADMIN'
+            WHERE notification_key = 'system:notification-center-launched'
+            """
+        )
 
     @staticmethod
     def _migrate_login_security(connection: sqlite3.Connection) -> None:

@@ -47,16 +47,44 @@ def test_notification_center_read_state_and_user_isolation(tmp_path):
         second_headers = {
             "Authorization": f"Bearer {second.json()['access_token']}"
         }
+        auth_service.create_admin(
+            email="notification-admin@example.com",
+            display_name="Notification Admin",
+            password="strong-admin-password",
+        )
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "notification-admin@example.com",
+                "password": "strong-admin-password",
+            },
+        )
+        admin_headers = {
+            "Authorization": f"Bearer {admin_login.json()['access_token']}"
+        }
 
         first_list = client.get(
             "/api/v1/notifications", headers=first_headers
         )
         assert first_list.status_code == 200
-        assert first_list.json()["unread_count"] == 2
+        assert first_list.json()["unread_count"] == 1
         assert {item["title"] for item in first_list.json()["items"]} == {
             "가입이 완료되었습니다",
-            "내부 알림센터가 준비되었습니다",
         }
+
+        admin_list = client.get(
+            "/api/v1/notifications", headers=admin_headers
+        )
+        assert admin_list.status_code == 200
+        assert admin_list.json()["unread_count"] == 1
+        assert [item["title"] for item in admin_list.json()["items"]] == [
+            "내부 알림센터가 준비되었습니다"
+        ]
+        admin_notice_id = admin_list.json()["items"][0]["id"]
+        assert client.patch(
+            f"/api/v1/notifications/{admin_notice_id}/read",
+            headers=first_headers,
+        ).status_code == 404
 
         welcome_id = next(
             item["id"]
@@ -73,7 +101,7 @@ def test_notification_center_read_state_and_user_isolation(tmp_path):
         ).status_code == 204
         assert client.get(
             "/api/v1/notifications", headers=first_headers
-        ).json()["unread_count"] == 1
+        ).json()["unread_count"] == 0
 
         assert client.patch(
             "/api/v1/notifications/read-all", headers=first_headers
@@ -83,6 +111,6 @@ def test_notification_center_read_state_and_user_isolation(tmp_path):
         ).json()["unread_count"] == 0
         assert client.get(
             "/api/v1/notifications", headers=second_headers
-        ).json()["unread_count"] == 2
+        ).json()["unread_count"] == 1
     finally:
         auth_api.service, notifications_api.service = originals

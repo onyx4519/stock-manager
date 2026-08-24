@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   notification_key TEXT NOT NULL UNIQUE,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  audience TEXT NOT NULL DEFAULT 'ALL'
+    CHECK(audience IN ('ALL', 'ADMIN')),
   category TEXT NOT NULL CHECK(category IN ('NOTICE', 'ACCOUNT', 'SERVICE')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
