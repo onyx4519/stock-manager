@@ -156,6 +156,11 @@ export function AuthForm({
               <p className="loginAttemptNotice" role="status">
                 <span>비밀번호를 5회 틀리면 비밀번호 변경이 필요합니다.</span>
                 <small>{state.failedLoginAttempts}/5회 틀렸습니다.</small>
+                {state.message && (
+                  <small className="loginAttemptError">
+                    {state.message}
+                  </small>
+                )}
               </p>
             )}
           <label className="autoLoginOption">
@@ -167,9 +172,11 @@ export function AuthForm({
           </label>
         </>
       )}
-      {state?.message && (!registering || !consentModalOpen) && (
-        <p className="formMessageText" role="alert">{state.message}</p>
-      )}
+      {state?.message
+        && (!registering || !consentModalOpen)
+        && (registering || typeof state.failedLoginAttempts !== "number") && (
+          <p className="formMessageText" role="alert">{state.message}</p>
+        )}
       <button
         className="primaryButton"
         disabled={pending}
