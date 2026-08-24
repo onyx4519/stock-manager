@@ -27,6 +27,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   placeholder="기업명·티커·종목코드 검색"
                   type="search"
                 />
+                <button aria-label="검색" className="searchSubmit" type="submit">
+                  <span aria-hidden="true" className="searchIcon" />
+                </button>
               </form>
               <div className="topbarActions">
                 <Suspense fallback={<span className="testBanner">API 확인 중</span>}>
