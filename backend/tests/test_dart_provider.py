@@ -75,6 +75,18 @@ def test_find_company_and_cache_corp_codes():
     assert client.call_count == 1
 
 
+def test_search_listed_companies_excludes_private_companies():
+    provider = DartProvider(api_key="test-key", client=FakeClient(corp_code_archive()))
+
+    by_name = provider.search_listed_companies("삼성")
+    by_code = provider.search_listed_companies("005930")
+    private = provider.search_listed_companies("비상장")
+
+    assert [item["stock_code"] for item in by_name] == ["005930"]
+    assert [item["corp_name"] for item in by_code] == ["삼성전자"]
+    assert private == []
+
+
 def test_opendart_error_xml_is_not_treated_as_zip():
     error_xml = (
         "<result><status>010</status>"

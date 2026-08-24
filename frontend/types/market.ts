@@ -11,6 +11,40 @@ export type StockQuote = {
   provider: string;
 };
 
+export type StockSearchItem = {
+  symbol: string;
+  companyName: string;
+  market: string;
+  currency: string;
+  provider: string;
+  price: number | null;
+  changePercent: number | null;
+  timestamp: string | null;
+  dataStatus: DataStatus;
+};
+
+export type StockSearchResponse = {
+  query: string | null;
+  totalCount: number;
+  items: StockSearchItem[];
+  sources: string[];
+  warnings: string[];
+};
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+};
+
+export type AuthSession = {
+  accessToken: string;
+  tokenType: string;
+  expiresAt: string;
+  user: AuthUser;
+};
+
 export type WatchlistItem = {
   symbol: string;
   companyName: string;

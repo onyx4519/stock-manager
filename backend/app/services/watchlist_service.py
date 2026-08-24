@@ -22,9 +22,9 @@ class WatchlistService:
         self.repository = repository
         self.market_service = market_service
 
-    def list_items(self) -> list[WatchlistItem]:
+    def list_items(self, user_id: str) -> list[WatchlistItem]:
         items: list[WatchlistItem] = []
-        for record in self.repository.list():
+        for record in self.repository.list(user_id):
             try:
                 quote = self.market_service.get_quote(record.symbol)
             except MarketProviderError:
@@ -48,14 +48,14 @@ class WatchlistService:
             )
         return items
 
-    def add_item(self, symbol: str) -> WatchlistItem:
+    def add_item(self, user_id: str, symbol: str) -> WatchlistItem:
         normalized = TransactionCreate.validate_symbol(symbol)
         quote = self.market_service.get_quote(normalized)
         if quote is None:
             raise UnsupportedWatchlistSymbolError(
                 "The selected symbol is not supported by the configured providers."
             )
-        record = self.repository.create(quote)
+        record = self.repository.create(user_id, quote)
         return WatchlistItem(
             **record.model_dump(),
             price=quote.price,
@@ -65,7 +65,7 @@ class WatchlistService:
             provider=quote.provider,
         )
 
-    def delete_item(self, symbol: str) -> None:
+    def delete_item(self, user_id: str, symbol: str) -> None:
         normalized = TransactionCreate.validate_symbol(symbol)
-        if not self.repository.delete(normalized):
+        if not self.repository.delete(user_id, normalized):
             raise WatchlistItemNotFoundError("Watchlist item not found.")

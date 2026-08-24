@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DataModeBadge } from "@/components/DataModeBadge";
+import { AccountStatus } from "@/components/AccountStatus";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import "./globals.css";
@@ -27,9 +28,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   type="search"
                 />
               </form>
-              <Suspense fallback={<span className="testBanner">API 확인 중</span>}>
-                <DataModeBadge />
-              </Suspense>
+              <div className="topbarActions">
+                <Suspense fallback={<span className="testBanner">API 확인 중</span>}>
+                  <DataModeBadge />
+                </Suspense>
+                <Suspense fallback={<span className="accountLink">계정 확인 중</span>}>
+                  <AccountStatus />
+                </Suspense>
+              </div>
             </header>
             {children}
           </main>

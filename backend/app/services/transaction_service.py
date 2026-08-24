@@ -26,32 +26,33 @@ class TransactionService:
         self.repository = repository
         self.market_service = market_service
 
-    def list_transactions(self, *, symbol: str | None = None) -> list[Transaction]:
+    def list_transactions(self, user_id: str, *, symbol: str | None = None) -> list[Transaction]:
         normalized_symbol = (
             TransactionCreate.validate_symbol(symbol) if symbol is not None else None
         )
-        return self.repository.list(symbol=normalized_symbol)
+        return self.repository.list(user_id, symbol=normalized_symbol)
 
-    def get_transaction(self, transaction_id: int) -> Transaction:
-        transaction = self.repository.get(transaction_id)
+    def get_transaction(self, user_id: str, transaction_id: int) -> Transaction:
+        transaction = self.repository.get(user_id, transaction_id)
         if transaction is None:
             raise TransactionNotFoundError("Transaction not found.")
         return transaction
 
-    def create_transaction(self, transaction: TransactionCreate) -> Transaction:
+    def create_transaction(self, user_id: str, transaction: TransactionCreate) -> Transaction:
         self._validate_quote(transaction)
-        existing = self.repository.list()
+        existing = self.repository.list(user_id)
         next_id = max((item.id for item in existing), default=0) + 1
         candidate = self._candidate(transaction, transaction_id=next_id)
         calculate_position_states([*existing, candidate])
-        return self.repository.create(transaction)
+        return self.repository.create(user_id, transaction)
 
     def update_transaction(
         self,
+        user_id: str,
         transaction_id: int,
         changes: TransactionUpdate,
     ) -> Transaction:
-        existing = self.get_transaction(transaction_id)
+        existing = self.get_transaction(user_id, transaction_id)
         merged = TransactionCreate.model_validate(
             {
                 **existing.model_dump(
@@ -72,21 +73,21 @@ class TransactionService:
         self._validate_quote(merged)
         candidate = self._candidate(merged, transaction_id=transaction_id)
         remaining = [
-            item for item in self.repository.list() if item.id != transaction_id
+            item for item in self.repository.list(user_id) if item.id != transaction_id
         ]
         calculate_position_states([*remaining, candidate])
-        updated = self.repository.update(transaction_id, merged)
+        updated = self.repository.update(user_id, transaction_id, merged)
         if updated is None:
             raise TransactionNotFoundError("Transaction not found.")
         return updated
 
-    def delete_transaction(self, transaction_id: int) -> None:
-        self.get_transaction(transaction_id)
+    def delete_transaction(self, user_id: str, transaction_id: int) -> None:
+        self.get_transaction(user_id, transaction_id)
         remaining = [
-            item for item in self.repository.list() if item.id != transaction_id
+            item for item in self.repository.list(user_id) if item.id != transaction_id
         ]
         calculate_position_states(remaining)
-        if not self.repository.delete(transaction_id):
+        if not self.repository.delete(user_id, transaction_id):
             raise TransactionNotFoundError("Transaction not found.")
 
     def _validate_quote(self, transaction: TransactionCreate) -> None:

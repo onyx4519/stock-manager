@@ -16,8 +16,8 @@ class PortfolioService:
         self.repository = repository
         self.market_service = market_service
 
-    def list_positions(self) -> list[Position]:
-        states = calculate_position_states(self.repository.list())
+    def list_positions(self, user_id: str) -> list[Position]:
+        states = calculate_position_states(self.repository.list(user_id))
         rows: list[dict] = []
         totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
 
@@ -80,9 +80,9 @@ class PortfolioService:
             )
         return sorted(positions, key=lambda item: (item.currency, -item.market_value))
 
-    def get_summary(self) -> PortfolioSummary:
-        states = calculate_position_states(self.repository.list())
-        positions = self.list_positions()
+    def get_summary(self, user_id: str) -> PortfolioSummary:
+        states = calculate_position_states(self.repository.list(user_id))
+        positions = self.list_positions(user_id)
         summaries: dict[str, dict[str, Decimal]] = defaultdict(
             lambda: {
                 "cost_basis": Decimal("0"),

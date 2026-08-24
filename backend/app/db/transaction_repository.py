@@ -8,47 +8,48 @@ class TransactionRepository:
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
 
-    def list(self, *, symbol: str | None = None) -> list[Transaction]:
-        sql = "SELECT * FROM transactions"
-        parameters: tuple[str, ...] = ()
+    def list(self, user_id: str, *, symbol: str | None = None) -> list[Transaction]:
+        sql = "SELECT * FROM transactions WHERE user_id = ?"
+        parameters: tuple[str, ...] = (user_id,)
         if symbol is not None:
-            sql += " WHERE symbol = ?"
-            parameters = (symbol,)
+            sql += " AND symbol = ?"
+            parameters = (user_id, symbol)
         sql += " ORDER BY executed_at DESC, id DESC"
 
         with self.database.connection() as connection:
             rows = connection.execute(sql, parameters).fetchall()
         return [self._from_row(row) for row in rows]
 
-    def get(self, transaction_id: int) -> Transaction | None:
+    def get(self, user_id: str, transaction_id: int) -> Transaction | None:
         with self.database.connection() as connection:
             row = connection.execute(
-                "SELECT * FROM transactions WHERE id = ?",
-                (transaction_id,),
+                "SELECT * FROM transactions WHERE user_id = ? AND id = ?",
+                (user_id, transaction_id),
             ).fetchone()
         return self._from_row(row) if row is not None else None
 
-    def create(self, transaction: TransactionCreate) -> Transaction:
+    def create(self, user_id: str, transaction: TransactionCreate) -> Transaction:
         now = datetime.now(timezone.utc).isoformat()
         values = self._values(transaction)
         with self.database.connection() as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO transactions (
-                  symbol, transaction_type, quantity, price, currency,
+                  user_id, symbol, transaction_type, quantity, price, currency,
                   fee, tax, executed_at, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (*values, now, now),
+                (user_id, *values, now, now),
             )
             transaction_id = cursor.lastrowid
-        created = self.get(transaction_id)
+        created = self.get(user_id, transaction_id)
         if created is None:
             raise RuntimeError("Created transaction could not be loaded.")
         return created
 
     def update(
         self,
+        user_id: str,
         transaction_id: int,
         transaction: TransactionCreate,
     ) -> Transaction | None:
@@ -60,19 +61,19 @@ class TransactionRepository:
                 UPDATE transactions
                 SET symbol = ?, transaction_type = ?, quantity = ?, price = ?,
                     currency = ?, fee = ?, tax = ?, executed_at = ?, updated_at = ?
-                WHERE id = ?
+                WHERE user_id = ? AND id = ?
                 """,
-                (*values, now, transaction_id),
+                (*values, now, user_id, transaction_id),
             )
             if cursor.rowcount == 0:
                 return None
-        return self.get(transaction_id)
+        return self.get(user_id, transaction_id)
 
-    def delete(self, transaction_id: int) -> bool:
+    def delete(self, user_id: str, transaction_id: int) -> bool:
         with self.database.connection() as connection:
             cursor = connection.execute(
-                "DELETE FROM transactions WHERE id = ?",
-                (transaction_id,),
+                "DELETE FROM transactions WHERE user_id = ? AND id = ?",
+                (user_id, transaction_id),
             )
         return cursor.rowcount > 0
 

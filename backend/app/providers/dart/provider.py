@@ -92,6 +92,45 @@ class DartProvider:
 
         return None
 
+    def search_listed_companies(
+        self,
+        query: str,
+        *,
+        limit: int = 20,
+    ) -> list[dict[str, str | None]]:
+        """Search OpenDART's listed-company directory without extra API calls."""
+        term = query.strip().casefold()
+        if not term:
+            return []
+
+        matches: list[tuple[tuple[int, int, str, str], dict[str, str | None]]] = []
+        for company in self.get_corp_codes():
+            stock_code = company.get("stock_code")
+            if not stock_code:
+                continue
+            corp_name = company["corp_name"] or ""
+            corp_eng_name = company.get("corp_eng_name") or ""
+            symbol = stock_code.casefold()
+            name = corp_name.casefold()
+            english_name = corp_eng_name.casefold()
+            if term not in symbol and term not in name and term not in english_name:
+                continue
+
+            if term == symbol:
+                rank = 0
+            elif term == name or term == english_name:
+                rank = 1
+            elif symbol.startswith(term):
+                rank = 2
+            elif name.startswith(term) or english_name.startswith(term):
+                rank = 3
+            else:
+                rank = 4
+            matches.append(((rank, len(corp_name), corp_name, stock_code), company))
+
+        matches.sort(key=lambda item: item[0])
+        return [company.copy() for _, company in matches[:limit]]
+
     def search_disclosures(
         self,
         corp_code: str,

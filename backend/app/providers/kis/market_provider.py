@@ -1,5 +1,7 @@
+import io
 import re
 import time
+import zipfile
 from datetime import date, datetime, time as datetime_time, timedelta
 from threading import RLock
 from zoneinfo import ZoneInfo
@@ -22,6 +24,11 @@ class KisMarketProvider:
     }
     SYMBOL_PATTERN = re.compile(r"^\d{6}$")
     SEOUL_TZ = ZoneInfo("Asia/Seoul")
+    MASTER_URLS = {
+        "KOSPI": "https://new.real.download.dws.co.kr/common/master/kospi_code.mst.zip",
+        "KOSDAQ": "https://new.real.download.dws.co.kr/common/master/kosdaq_code.mst.zip",
+    }
+    MASTER_TAIL_WIDTHS = {"KOSPI": 228, "KOSDAQ": 222}
 
     def __init__(
         self,
@@ -51,6 +58,7 @@ class KisMarketProvider:
         self._access_token: str | None = None
         self._token_expires_at = 0.0
         self._quotes: dict[str, tuple[float, StockQuote]] = {}
+        self._stock_directory: tuple[dict[str, str], ...] | None = None
         self._lock = RLock()
 
     def list_quotes(self) -> list[StockQuote]:
@@ -77,6 +85,94 @@ class KisMarketProvider:
             quote = self._normalize_quote(normalized_symbol, payload)
             self._quotes[normalized_symbol] = (now, quote)
             return quote.model_copy()
+
+    def search_tickers(self, query: str, *, limit: int = 20) -> list[dict[str, str]]:
+        term = query.strip().casefold()
+        if not term:
+            return []
+
+        matches: list[tuple[tuple[int, int, str], dict[str, str]]] = []
+        for item in self._get_stock_directory():
+            symbol = item["symbol"].casefold()
+            name = item["company_name"].casefold()
+            if term not in symbol and term not in name:
+                continue
+            if term == symbol:
+                rank = 0
+            elif term == name:
+                rank = 1
+            elif symbol.startswith(term):
+                rank = 2
+            elif name.startswith(term):
+                rank = 3
+            else:
+                rank = 4
+            matches.append(((rank, len(name), item["symbol"]), item))
+
+        matches.sort(key=lambda item: item[0])
+        return [item.copy() for _, item in matches[:limit]]
+
+    def _get_stock_directory(self) -> tuple[dict[str, str], ...]:
+        with self._lock:
+            if self._stock_directory is not None:
+                return self._stock_directory
+
+            items: list[dict[str, str]] = []
+            for exchange, url in self.MASTER_URLS.items():
+                items.extend(self._download_master(exchange, url))
+            self._stock_directory = tuple(items)
+            return self._stock_directory
+
+    def _download_master(self, exchange: str, url: str) -> list[dict[str, str]]:
+        request = self._client.get if self._client is not None else httpx.get
+        try:
+            response = request(url, timeout=30.0)
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MarketProviderError("KIS stock-master request failed.") from exc
+        return self._parse_master_archive(
+            response.content,
+            exchange=exchange,
+            tail_width=self.MASTER_TAIL_WIDTHS[exchange],
+        )
+
+    @classmethod
+    def _parse_master_archive(
+        cls,
+        content: bytes,
+        *,
+        exchange: str,
+        tail_width: int,
+    ) -> list[dict[str, str]]:
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as archive:
+                file_name = next(
+                    name for name in archive.namelist() if name.lower().endswith(".mst")
+                )
+                text = archive.read(file_name).decode("cp949")
+        except (StopIteration, KeyError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
+            raise MarketProviderDataError("KIS stock-master archive is invalid.") from exc
+
+        items: list[dict[str, str]] = []
+        for row in text.splitlines():
+            if len(row) <= tail_width:
+                continue
+            header = row[:-tail_width]
+            symbol = header[0:9].strip()
+            company_name = header[21:].strip()
+            if not cls.SYMBOL_PATTERN.fullmatch(symbol) or not company_name:
+                continue
+            items.append(
+                {
+                    "symbol": symbol,
+                    "company_name": company_name,
+                    "currency": "KRW",
+                    "exchange": exchange,
+                }
+            )
+        if not items:
+            raise MarketProviderDataError("KIS stock-master contains no usable symbols.")
+        return items
 
     def _validate_configuration(self) -> None:
         if not self.app_key or not self.app_secret:

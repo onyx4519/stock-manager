@@ -91,6 +91,54 @@ class MassiveMarketProvider:
             self._quotes[normalized_symbol] = (now, quote)
             return quote.model_copy()
 
+    def search_tickers(self, query: str, *, limit: int = 20) -> list[dict[str, str]]:
+        """Search Massive's active US stock directory without loading quotes."""
+        term = query.strip()
+        if not term:
+            return []
+        if not self.api_key:
+            raise MarketProviderConfigurationError(
+                "MASSIVE_API_KEY is not configured."
+            )
+
+        payload = self._request_json(
+            "/v3/reference/tickers",
+            params={
+                "market": "stocks",
+                "locale": "us",
+                "active": "true",
+                "search": term,
+                "limit": min(max(limit, 1), 50),
+                "sort": "ticker",
+                "order": "asc",
+            },
+        )
+        results = payload.get("results", [])
+        if not isinstance(results, list):
+            raise MarketProviderDataError("Massive ticker search results are invalid.")
+
+        tickers: list[dict[str, str]] = []
+        for item in results:
+            if not isinstance(item, dict):
+                raise MarketProviderDataError("Massive ticker search item is invalid.")
+            ticker = item.get("ticker")
+            name = item.get("name")
+            currency = item.get("currency_name", "usd")
+            if not isinstance(ticker, str) or not ticker.strip():
+                continue
+            if not isinstance(name, str) or not name.strip():
+                continue
+            if not isinstance(currency, str) or not currency.strip():
+                currency = "usd"
+            tickers.append(
+                {
+                    "symbol": ticker.strip().upper(),
+                    "company_name": name.strip(),
+                    "currency": currency.strip().upper(),
+                }
+            )
+        return tickers
+
     def _get_company_metadata(self, symbol: str) -> tuple[str, str]:
         cached = self._company_names.get(symbol)
         if cached is not None:

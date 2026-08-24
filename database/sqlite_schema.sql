@@ -1,5 +1,24 @@
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  display_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_expires
+ON sessions(user_id, expires_at);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   symbol TEXT NOT NULL CHECK(length(symbol) BETWEEN 1 AND 15),
   transaction_type TEXT NOT NULL CHECK(transaction_type IN ('BUY', 'SELL')),
   quantity TEXT NOT NULL CHECK(CAST(quantity AS REAL) > 0),
@@ -19,11 +38,10 @@ CREATE INDEX IF NOT EXISTS idx_transactions_symbol_executed_at
 ON transactions(symbol, executed_at, id);
 
 CREATE TABLE IF NOT EXISTS watchlist_items (
-  symbol TEXT PRIMARY KEY CHECK(length(symbol) BETWEEN 1 AND 15),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  symbol TEXT NOT NULL CHECK(length(symbol) BETWEEN 1 AND 15),
   company_name TEXT NOT NULL,
   currency TEXT NOT NULL CHECK(length(currency) = 3),
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, symbol)
 );
-
-CREATE INDEX IF NOT EXISTS idx_watchlist_items_created_at
-ON watchlist_items(created_at DESC, symbol);

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { addWatchlistAction } from "@/app/watchlist/actions";
 import { DataBadge } from "@/components/DataBadge";
-import type { StockQuote } from "@/types/market";
+import type { StockSearchItem } from "@/types/market";
 
 
 const money = (value: number, currency: string) =>
@@ -17,10 +17,12 @@ const money = (value: number, currency: string) =>
 
 
 export function StockSearchResults({
-  quotes,
+  canSave,
+  items,
   watchedSymbols,
 }: {
-  quotes: StockQuote[];
+  canSave: boolean;
+  items: StockSearchItem[];
   watchedSymbols: string[];
 }) {
   const router = useRouter();
@@ -43,7 +45,7 @@ export function StockSearchResults({
     });
   };
 
-  if (quotes.length === 0) {
+  if (items.length === 0) {
     return <div className="card emptyState">검색 결과가 없습니다.</div>;
   }
 
@@ -51,31 +53,45 @@ export function StockSearchResults({
     <>
       {message && <div className="card formMessage" role="alert">{message}</div>}
       <div className="stockResultList">
-        {quotes.map((quote) => {
-          const isWatched = watched.has(quote.symbol);
+        {items.map((item) => {
+          const isWatched = watched.has(item.symbol);
           return (
-            <article className="card stockResultRow" key={quote.symbol}>
-              <Link className="stockResultLink" href={`/stocks/${quote.symbol}`}>
+            <article className="card stockResultRow" key={item.symbol}>
+              <Link className="stockResultLink" href={`/stocks/${item.symbol}`}>
                 <div>
-                  <strong>{quote.companyName}</strong>
-                  <div className="muted">{quote.symbol} · {quote.currency} · {quote.provider}</div>
+                  <strong>{item.companyName}</strong>
+                  <div className="muted">
+                    {item.symbol} · {item.market} · {item.currency} · {item.provider}
+                  </div>
                 </div>
                 <div className="stockResultPrice">
-                  <b>{money(quote.price, quote.currency)}</b>
-                  <span className={quote.changePercent >= 0 ? "positive" : "negative"}>
-                    {quote.changePercent >= 0 ? "+" : ""}{quote.changePercent.toFixed(2)}%
-                  </span>
-                  <DataBadge status={quote.dataStatus} />
+                  {item.price !== null && item.changePercent !== null ? (
+                    <>
+                      <b>{money(item.price, item.currency)}</b>
+                      <span className={item.changePercent >= 0 ? "positive" : "negative"}>
+                        {item.changePercent >= 0 ? "+" : ""}{item.changePercent.toFixed(2)}%
+                      </span>
+                      <DataBadge status={item.dataStatus} />
+                    </>
+                  ) : (
+                    <span className="muted">선택하면 시세 조회</span>
+                  )}
                 </div>
               </Link>
-              <button
-                className="secondaryButton watchButton"
-                disabled={isPending || isWatched}
-                onClick={() => addItem(quote.symbol)}
-                type="button"
-              >
-                {isWatched ? "저장됨" : pendingSymbol === quote.symbol ? "추가 중" : "+ 관심종목"}
-              </button>
+              {canSave ? (
+                <button
+                  className="secondaryButton watchButton"
+                  disabled={isPending || isWatched}
+                  onClick={() => addItem(item.symbol)}
+                  type="button"
+                >
+                  {isWatched ? "저장됨" : pendingSymbol === item.symbol ? "추가 중" : "+ 관심종목"}
+                </button>
+              ) : (
+                <Link className="secondaryButton watchButton loginWatchButton" href="/login">
+                  로그인 후 저장
+                </Link>
+              )}
             </article>
           );
         })}

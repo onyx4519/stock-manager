@@ -1,9 +1,13 @@
 import { ApiMessage } from "@/components/ApiMessage";
 import { WatchlistManager } from "@/components/WatchlistManager";
 import { getWatchlist } from "@/lib/api";
+import { requireCurrentUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 
 export default async function WatchlistPage() {
+  await requireCurrentUser();
   const result = await getWatchlist()
     .then((items) => ({ items, error: null }))
     .catch((error: Error) => ({ items: [], error: error.message }));

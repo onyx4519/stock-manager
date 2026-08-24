@@ -5,12 +5,22 @@ from fastapi.testclient import TestClient
 
 from app.api import portfolio as portfolio_api
 from app.api import transactions as transactions_api
+from app.api.auth import get_current_user
 from app.db import SQLiteDatabase, TransactionRepository
 from app.main import app
 from app.providers.mock.market_provider import MockMarketProvider
 from app.services.market_service import MarketService
 from app.services.portfolio_service import PortfolioService
 from app.services.transaction_service import TransactionService
+from app.schemas.auth import AuthUser
+
+
+TEST_USER = AuthUser(
+    id=SQLiteDatabase.LEGACY_USER_ID,
+    email="test@example.com",
+    display_name="Test User",
+    created_at="2026-08-25T00:00:00Z",
+)
 
 
 @pytest.fixture
@@ -25,11 +35,13 @@ def client(tmp_path):
     original_portfolio_service = portfolio_api.service
     transactions_api.service = transaction_service
     portfolio_api.service = portfolio_service
+    app.dependency_overrides[get_current_user] = lambda: TEST_USER
     try:
         yield TestClient(app), database
     finally:
         transactions_api.service = original_transaction_service
         portfolio_api.service = original_portfolio_service
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 def payload(
@@ -126,7 +138,7 @@ def test_sqlite_transactions_persist_and_use_symbol_index(client):
     assert test_client.post("/api/v1/transactions", json=payload()).status_code == 201
 
     reloaded_repository = TransactionRepository(SQLiteDatabase(database.path))
-    assert len(reloaded_repository.list(symbol="NVDA")) == 1
+    assert len(reloaded_repository.list(TEST_USER.id, symbol="NVDA")) == 1
 
     with database.connection() as connection:
         indexes = {
@@ -137,11 +149,14 @@ def test_sqlite_transactions_persist_and_use_symbol_index(client):
             """
             EXPLAIN QUERY PLAN
             SELECT * FROM transactions
-            WHERE symbol = ?
+            WHERE user_id = ? AND symbol = ?
             ORDER BY executed_at DESC, id DESC
             """,
-            ("NVDA",),
+            (TEST_USER.id, "NVDA"),
         ).fetchall()
 
-    assert "idx_transactions_symbol_executed_at" in indexes
-    assert any("USING INDEX idx_transactions_symbol_executed_at" in row["detail"] for row in plan)
+    assert "idx_transactions_user_symbol_executed_at" in indexes
+    assert any(
+        "USING INDEX idx_transactions_user_symbol_executed_at" in row["detail"]
+        for row in plan
+    )

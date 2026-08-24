@@ -15,7 +15,18 @@ class FakeMassiveClient:
 
     def get(self, url: str, *, params: dict, timeout: float) -> httpx.Response:
         self.calls.append((url, params))
-        if "/v3/reference/tickers/" in url:
+        if url.endswith("/v3/reference/tickers"):
+            payload = {
+                "status": "OK",
+                "results": [
+                    {
+                        "ticker": "NVDA",
+                        "name": "NVIDIA Corporation",
+                        "currency_name": "usd",
+                    }
+                ],
+            }
+        elif "/v3/reference/tickers/" in url:
             payload = {
                 "status": "OK",
                 "results": {
@@ -72,6 +83,24 @@ def test_massive_company_metadata_is_cached():
 
     assert first_quote == second_quote
     assert len(client.calls) == 2
+
+
+def test_massive_searches_active_us_stock_directory():
+    client = FakeMassiveClient()
+    provider = MassiveMarketProvider(api_key="test-key", client=client)
+
+    results = provider.search_tickers("nvidia", limit=10)
+
+    assert results == [
+        {
+            "symbol": "NVDA",
+            "company_name": "NVIDIA Corporation",
+            "currency": "USD",
+        }
+    ]
+    assert client.calls[0][1]["market"] == "stocks"
+    assert client.calls[0][1]["active"] == "true"
+    assert client.calls[0][1]["search"] == "nvidia"
 
 
 def test_massive_missing_key_fails_before_http_request():

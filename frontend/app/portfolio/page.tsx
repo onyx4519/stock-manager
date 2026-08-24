@@ -6,8 +6,12 @@ import {
   getQuotes,
   getTransactions,
 } from "@/lib/api";
+import { requireCurrentUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
+  await requireCurrentUser();
   try {
     const [positions, summary, transactions, quotes] = await Promise.all([
       getPortfolioPositions(),

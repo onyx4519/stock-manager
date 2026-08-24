@@ -3,12 +3,47 @@ from fastapi.testclient import TestClient
 
 from app.api import stocks as stocks_api
 from app.api import watchlist as watchlist_api
+from app.api.auth import get_current_user
 from app.db import SQLiteDatabase, WatchlistRepository
 from app.main import app
 from app.providers.mock.market_provider import MockMarketProvider
 from app.providers.market import MarketProviderError
 from app.services.market_service import MarketService
 from app.services.watchlist_service import WatchlistService
+from app.schemas.auth import AuthUser
+from app.schemas.market import StockSearchResponse
+
+
+TEST_USER = AuthUser(
+    id=SQLiteDatabase.LEGACY_USER_ID,
+    email="test@example.com",
+    display_name="Test User",
+    created_at="2026-08-25T00:00:00Z",
+)
+
+
+class StubStockDirectory:
+    def __init__(self, market_service: MarketService) -> None:
+        self.market_service = market_service
+
+    def search(self, query, *, limit=20):
+        term = query.casefold() if query else ""
+        items = [
+            {
+                **quote.model_dump(),
+                "market": "US",
+            }
+            for quote in self.market_service.list_quotes()
+            if not term
+            or term in quote.symbol.casefold()
+            or term in quote.company_name.casefold()
+        ][:limit]
+        return StockSearchResponse(
+            query=query,
+            total_count=len(items),
+            items=items,
+            sources=["Mock"],
+        )
 
 
 @pytest.fixture
@@ -21,12 +56,14 @@ def client(tmp_path):
     original_watchlist_service = watchlist_api.service
     original_stocks_service = stocks_api.service
     watchlist_api.service = watchlist_service
-    stocks_api.service = market_service
+    stocks_api.service = StubStockDirectory(market_service)
+    app.dependency_overrides[get_current_user] = lambda: TEST_USER
     try:
         yield TestClient(app), database
     finally:
         watchlist_api.service = original_watchlist_service
         stocks_api.service = original_stocks_service
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_search_and_watchlist_crud(client):
@@ -34,7 +71,7 @@ def test_search_and_watchlist_crud(client):
 
     search = test_client.get("/api/v1/stocks?q=nvidia")
     assert search.status_code == 200
-    assert [item["symbol"] for item in search.json()] == ["NVDA"]
+    assert [item["symbol"] for item in search.json()["items"]] == ["NVDA"]
 
     created = test_client.post("/api/v1/watchlist", json={"symbol": "nvda"})
     assert created.status_code == 201
@@ -93,7 +130,7 @@ def test_watchlist_persists_and_uses_created_at_index(client):
     ).status_code == 201
 
     reloaded = WatchlistRepository(SQLiteDatabase(database.path))
-    assert [item.symbol for item in reloaded.list()] == ["NVDA"]
+    assert [item.symbol for item in reloaded.list(TEST_USER.id)] == ["NVDA"]
 
     with database.connection() as connection:
         indexes = {
@@ -107,8 +144,10 @@ def test_watchlist_persists_and_uses_created_at_index(client):
             EXPLAIN QUERY PLAN
             SELECT symbol, company_name, currency, created_at
             FROM watchlist_items
+            WHERE user_id = ?
             ORDER BY created_at DESC, symbol
-            """
+            """,
+            (TEST_USER.id,),
         ).fetchall()
 
     assert "idx_watchlist_items_created_at" in indexes

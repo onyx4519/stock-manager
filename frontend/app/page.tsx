@@ -1,15 +1,18 @@
 import { QuoteCard } from "@/components/QuoteCard";
 import { ApiMessage } from "@/components/ApiMessage";
-import { getPortfolioSummary, getQuotes } from "@/lib/api";
+import Link from "next/link";
+import { getCurrentUser, getPortfolioSummary, getQuotes } from "@/lib/api";
 
 export default async function DashboardPage() {
+  const currentUser = await getCurrentUser().catch(() => null);
   const [quoteResult, portfolioResult] = await Promise.all([
     getQuotes()
     .then((quotes) => ({ quotes, error: null }))
     .catch((error: Error) => ({ quotes: [], error: error.message })),
-    getPortfolioSummary()
+    currentUser ? getPortfolioSummary()
       .then((summary) => ({ summary, error: null }))
-      .catch((error: Error) => ({ summary: null, error: error.message })),
+      .catch((error: Error) => ({ summary: null, error: error.message }))
+      : Promise.resolve({ summary: null, error: null }),
   ]);
   return (
     <div className="page">
@@ -31,7 +34,11 @@ export default async function DashboardPage() {
 
       <section>
         <h2>내 포트폴리오</h2>
-        {portfolioResult.error || !portfolioResult.summary ? (
+        {!currentUser ? (
+          <div className="card emptyState">
+            계정별 포트폴리오를 확인하려면 <Link className="inlineLink" href="/login">로그인</Link>해 주세요.
+          </div>
+        ) : portfolioResult.error || !portfolioResult.summary ? (
           <ApiMessage title="포트폴리오를 불러오지 못했습니다" message={portfolioResult.error ?? "알 수 없는 오류가 발생했습니다."} />
         ) : (
           <div className="statsGrid">

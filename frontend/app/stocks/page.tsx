@@ -1,6 +1,6 @@
 import { ApiMessage } from "@/components/ApiMessage";
 import { StockSearchResults } from "@/components/StockSearchResults";
-import { getWatchlist, searchStocks } from "@/lib/api";
+import { getCurrentUser, getWatchlist, searchStocks } from "@/lib/api";
 
 
 export default async function StocksPage({
@@ -10,9 +10,18 @@ export default async function StocksPage({
 }) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim() : "";
-  const result = await Promise.all([searchStocks(query), getWatchlist()])
-    .then(([quotes, watchlist]) => ({ quotes, watchlist, error: null }))
-    .catch((error: Error) => ({ quotes: [], watchlist: [], error: error.message }));
+  const [searchResult, watchlistResult, currentUser] = await Promise.all([
+    searchStocks(query)
+      .then((search) => ({ search, error: null }))
+      .catch((error: Error) => ({ search: null, error: error.message })),
+    getWatchlist().catch(() => []),
+    getCurrentUser().catch(() => null),
+  ]);
+  const result = {
+    search: searchResult.search,
+    watchlist: watchlistResult,
+    error: searchResult.error,
+  };
 
   return (
     <div className="page">
@@ -20,7 +29,7 @@ export default async function StocksPage({
         <div>
           <div className="eyebrow">Stocks</div>
           <h1>종목 검색</h1>
-          <p className="muted">현재 연결된 KIS·Massive 종목에서 검색하고 관심종목으로 저장합니다.</p>
+          <p className="muted">국내 상장회사와 미국 활성 종목 전체에서 검색한 뒤 필요한 시세만 조회합니다.</p>
         </div>
       </div>
 
@@ -31,7 +40,7 @@ export default async function StocksPage({
             defaultValue={query}
             id="stock-search"
             name="q"
-            placeholder="예: 삼성전자, 005930, NVDA"
+            placeholder="예: 삼성전자, SK하이닉스, NVIDIA, NVDA"
             type="search"
           />
           <button className="primaryButton" type="submit">검색</button>
@@ -40,16 +49,22 @@ export default async function StocksPage({
 
       <section>
         <div className="rowBetween gap sectionTitleRow">
-          <h2>{query ? `‘${query}’ 검색 결과` : "연결된 종목"}</h2>
-          {!result.error && <span className="muted">{result.quotes.length}개</span>}
+          <h2>{query ? `‘${query}’ 전체 시장 검색 결과` : "시작 종목"}</h2>
+          {result.search && <span className="muted">{result.search.totalCount}개</span>}
         </div>
         {result.error ? (
           <ApiMessage title="종목을 불러오지 못했습니다" message={result.error} />
         ) : (
-          <StockSearchResults
-            quotes={result.quotes}
-            watchedSymbols={result.watchlist.map((item) => item.symbol)}
-          />
+          <>
+            {result.search?.warnings.map((warning) => (
+              <p className="searchNotice" key={warning}>{warning}</p>
+            ))}
+            <StockSearchResults
+              canSave={currentUser !== null}
+              items={result.search?.items ?? []}
+              watchedSymbols={result.watchlist.map((item) => item.symbol)}
+            />
+          </>
         )}
       </section>
     </div>

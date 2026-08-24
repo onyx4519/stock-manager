@@ -1,7 +1,11 @@
 import "server-only";
 
+import { cookies } from "next/headers";
+
 import type {
   CurrencySummary,
+  AuthSession,
+  AuthUser,
   DartCompany,
   DartDisclosure,
   DartDisclosureList,
@@ -18,6 +22,7 @@ import type {
   PortfolioSummary,
   PortfolioTransaction,
   StockQuote,
+  StockSearchResponse,
   TransactionInput,
   TransactionType,
   WatchlistItem,
@@ -25,6 +30,22 @@ import type {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
+export const SESSION_COOKIE_NAME = "stock_manager_session";
+
+type BackendAuthUser = {
+  id: string;
+  email: string;
+  display_name: string;
+  created_at: string;
+};
+
+type BackendAuthSession = {
+  access_token: string;
+  token_type: string;
+  expires_at: string;
+  user: BackendAuthUser;
+};
 
 type BackendStockQuote = {
   symbol: string;
@@ -35,6 +56,26 @@ type BackendStockQuote = {
   timestamp: string;
   data_status: DataStatus;
   provider: string;
+};
+
+type BackendStockSearchItem = {
+  symbol: string;
+  company_name: string;
+  market: string;
+  currency: string;
+  provider: string;
+  price: number | null;
+  change_percent: number | null;
+  timestamp: string | null;
+  data_status: DataStatus;
+};
+
+type BackendStockSearchResponse = {
+  query: string | null;
+  total_count: number;
+  items: BackendStockSearchItem[];
+  sources: string[];
+  warnings: string[];
 };
 
 type BackendPosition = {
@@ -212,11 +253,13 @@ export class ApiError extends Error {
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
+    const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
     response = await fetch(url, {
       ...init,
       cache: "no-store",
       headers: {
         ...(init.body ? { "content-type": "application/json" } : {}),
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },
     });
@@ -242,6 +285,24 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new ApiError("백엔드 응답 형식이 올바르지 않습니다.");
   }
+}
+
+function normalizeAuthUser(user: BackendAuthUser): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    createdAt: user.created_at,
+  };
+}
+
+function normalizeAuthSession(session: BackendAuthSession): AuthSession {
+  return {
+    accessToken: session.access_token,
+    tokenType: session.token_type,
+    expiresAt: session.expires_at,
+    user: normalizeAuthUser(session.user),
+  };
 }
 
 function normalizePosition(position: BackendPosition): PortfolioPosition {
@@ -400,6 +461,43 @@ export async function getHealth(): Promise<BackendHealth> {
   return request<BackendHealth>(`${backendOrigin}/health`);
 }
 
+export async function registerUser(input: {
+  email: string;
+  display_name: string;
+  password: string;
+}): Promise<AuthSession> {
+  const session = await request<BackendAuthSession>(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return normalizeAuthSession(session);
+}
+
+export async function loginUser(input: {
+  email: string;
+  password: string;
+}): Promise<AuthSession> {
+  const session = await request<BackendAuthSession>(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return normalizeAuthSession(session);
+}
+
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const user = await request<BackendAuthUser>(`${API_BASE_URL}/auth/me`);
+    return normalizeAuthUser(user);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+}
+
+export async function logoutUser(): Promise<void> {
+  return request<void>(`${API_BASE_URL}/auth/logout`, { method: "POST" });
+}
+
 export async function getQuotes(): Promise<StockQuote[]> {
   const quotes = await request<BackendStockQuote[]>(`${API_BASE_URL}/market/quotes`);
   return quotes.map(normalizeQuote);
@@ -412,11 +510,27 @@ export async function getQuote(symbol: string): Promise<StockQuote> {
   return normalizeQuote(quote);
 }
 
-export async function searchStocks(query = ""): Promise<StockQuote[]> {
+export async function searchStocks(query = ""): Promise<StockSearchResponse> {
   const url = new URL(`${API_BASE_URL}/stocks`);
   if (query.trim()) url.searchParams.set("q", query.trim());
-  const quotes = await request<BackendStockQuote[]>(url.toString());
-  return quotes.map(normalizeQuote);
+  const result = await request<BackendStockSearchResponse>(url.toString());
+  return {
+    query: result.query,
+    totalCount: result.total_count,
+    items: result.items.map((item) => ({
+      symbol: item.symbol,
+      companyName: item.company_name,
+      market: item.market,
+      currency: item.currency,
+      provider: item.provider,
+      price: item.price,
+      changePercent: item.change_percent,
+      timestamp: item.timestamp,
+      dataStatus: item.data_status,
+    })),
+    sources: result.sources,
+    warnings: result.warnings,
+  };
 }
 
 export async function getWatchlist(): Promise<WatchlistItem[]> {

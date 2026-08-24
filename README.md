@@ -1,6 +1,6 @@
 # Stock Manager MVP
 
-개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용합니다. 매수·매도 거래와 관심종목은 SQLite에 저장되며, 실제 보유 수량, 평균 단가, 평가 손익과 실현 손익으로 포트폴리오를 계산합니다.
+개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용합니다. KIS KOSPI·KOSDAQ 마스터와 Massive 전체 종목 디렉터리를 검색하고, 매수·매도 거래와 관심종목은 로그인 계정별로 SQLite에 분리 저장합니다.
 
 ## 구조
 
@@ -54,6 +54,8 @@ KIS_APP_KEY=발급받은_App_Key
 KIS_APP_SECRET=발급받은_App_Secret
 ```
 
+`MASSIVE_SYMBOLS`와 `KIS_SYMBOLS`는 홈·검색 첫 화면에 보여 줄 시작 종목입니다. 검색 가능한 전체 종목 수를 제한하는 설정이 아닙니다. 국내 종목은 KIS가 공식 배포하는 최신 KOSPI·KOSDAQ 마스터, 미국 활성 주식은 Massive 종목 디렉터리에서 회사명·종목코드로 검색하며, 선택한 종목의 시세만 조회합니다. KIS 마스터를 일시적으로 불러오지 못한 경우에만 OpenDART 상장회사 목록을 대체 검색원으로 사용합니다.
+
 영문 티커는 Massive, 6자리 국내 종목코드는 KIS로 자동 분기됩니다. 두 Provider 모두 최근 완료된 두 거래일의 종가로 변동률을 계산하고 `EOD`로 표시합니다. OAuth 토큰과 동일 종목 시세는 캐시하여 호출 제한을 줄이며, 외부 API 오류 시 Mock 값으로 자동 대체하지 않습니다.
 
 KIS 모의투자용 키를 사용하는 경우 `KIS_ENVIRONMENT=demo`로 변경합니다.
@@ -72,7 +74,11 @@ DATABASE_PATH=data/stock_manager.db
 - `DELETE /api/v1/transactions/{id}`: 거래 삭제
 - `GET /api/v1/portfolio/positions`: 실제 보유 포지션 조회
 - `GET /api/v1/portfolio/summary`: 통화별 포트폴리오 요약
-- `GET /api/v1/stocks?q={검색어}`: 연결된 종목 검색
+- `GET /api/v1/stocks?q={검색어}&limit=20`: KOSPI·KOSDAQ·미국 활성 주식 통합 검색
+- `POST /api/v1/auth/register`: 계정 생성 및 세션 발급
+- `POST /api/v1/auth/login`: 로그인 및 세션 발급
+- `GET /api/v1/auth/me`: 현재 로그인 계정 확인
+- `POST /api/v1/auth/logout`: 세션 종료
 - `GET /api/v1/watchlist`: 관심종목 조회
 - `POST /api/v1/watchlist`: 관심종목 추가
 - `DELETE /api/v1/watchlist/{symbol}`: 관심종목 삭제
@@ -95,8 +101,8 @@ npm run dev
 
 ## 다음 구현 순서
 
-1. 사용자 인증 및 다중 사용자 데이터 분리
-2. Supabase/PostgreSQL 전환 및 배포 환경 구성
+1. Supabase/PostgreSQL 전환 및 배포 환경 구성
+2. 이메일 인증·비밀번호 재설정 등 운영용 인증 강화
 
 ## 안전한 데이터 표시 원칙
 

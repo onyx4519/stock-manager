@@ -1,3 +1,6 @@
+import io
+import zipfile
+
 import httpx
 import pytest
 
@@ -140,3 +143,26 @@ def test_kis_http_error_does_not_expose_credentials():
     message = str(exc_info.value)
     assert "secret-app-key" not in message
     assert "secret-app-secret" not in message
+
+
+def test_kis_master_archive_parses_searchable_domestic_symbols():
+    header = f"{'005930':<9}{'KR7005930003':<12}삼성전자"
+    row = f"{header}{' ' * 228}\n"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("kospi_code.mst", row.encode("cp949"))
+
+    items = KisMarketProvider._parse_master_archive(
+        buffer.getvalue(),
+        exchange="KOSPI",
+        tail_width=228,
+    )
+
+    assert items == [
+        {
+            "symbol": "005930",
+            "company_name": "삼성전자",
+            "currency": "KRW",
+            "exchange": "KOSPI",
+        }
+    ]
