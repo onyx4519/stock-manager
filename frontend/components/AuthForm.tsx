@@ -155,12 +155,12 @@ export function AuthForm({
             && state.failedLoginAttempts >= 1 && (
               <p className="loginAttemptNotice" role="status">
                 <span>비밀번호를 5회 틀리면 비밀번호 변경이 필요합니다.</span>
-                <small>{state.failedLoginAttempts}/5회 틀렸습니다.</small>
                 {state.message && (
                   <small className="loginAttemptError">
                     {state.message}
                   </small>
                 )}
+                <small>{state.failedLoginAttempts}/5회 틀렸습니다.</small>
               </p>
             )}
           <label className="autoLoginOption">
