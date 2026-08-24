@@ -33,8 +33,10 @@ class Settings:
         self.market_provider = os.getenv(
             "MARKET_PROVIDER", default_market_provider
         ).strip().lower()
-        if self.market_provider not in {"mock", "massive"}:
-            raise ValueError("MARKET_PROVIDER must be 'mock' or 'massive'.")
+        if self.market_provider not in {"mock", "massive", "kis", "hybrid"}:
+            raise ValueError(
+                "MARKET_PROVIDER must be 'mock', 'massive', 'kis', or 'hybrid'."
+            )
         self.mock_mode = self.market_provider == "mock"
         self.kis_app_key = os.getenv("KIS_APP_KEY", "")
         self.kis_app_secret = os.getenv("KIS_APP_SECRET", "")
@@ -49,6 +51,18 @@ class Settings:
         self.massive_cache_seconds = int(os.getenv("MASSIVE_CACHE_SECONDS", "900"))
         if self.massive_cache_seconds <= 0:
             raise ValueError("MASSIVE_CACHE_SECONDS must be greater than zero.")
+        kis_symbols = os.getenv("KIS_SYMBOLS", "005930")
+        self.kis_symbols = tuple(
+            dict.fromkeys(
+                symbol.strip() for symbol in kis_symbols.split(",") if symbol.strip()
+            )
+        )
+        self.kis_environment = os.getenv("KIS_ENVIRONMENT", "real").strip().lower()
+        if self.kis_environment not in {"real", "demo"}:
+            raise ValueError("KIS_ENVIRONMENT must be 'real' or 'demo'.")
+        self.kis_cache_seconds = int(os.getenv("KIS_CACHE_SECONDS", "900"))
+        if self.kis_cache_seconds <= 0:
+            raise ValueError("KIS_CACHE_SECONDS must be greater than zero.")
 
     def api_status(self) -> dict[str, bool]:
         return {
