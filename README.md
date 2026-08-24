@@ -1,12 +1,12 @@
 # Stock Manager MVP
 
-개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용하며, 포트폴리오는 아직 **Mock 데이터**입니다.
+개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용합니다. 매수·매도 거래는 SQLite에 저장되고 실제 보유 수량, 평균 단가, 평가 손익과 실현 손익으로 포트폴리오를 계산합니다.
 
 ## 구조
 
 - `frontend/`: Next.js + TypeScript 반응형 웹
 - `backend/`: FastAPI + Python
-- `database/`: PostgreSQL/Supabase-ready schema
+- `database/`: 로컬 SQLite 및 PostgreSQL/Supabase-ready schema
 - `docs/`: API 및 설계 기록
 
 ## Backend 실행
@@ -56,6 +56,23 @@ KIS_APP_SECRET=발급받은_App_Secret
 
 KIS 모의투자용 키를 사용하는 경우 `KIS_ENVIRONMENT=demo`로 변경합니다.
 
+로컬 거래 데이터 파일 위치는 필요할 때 다음 환경 변수로 변경할 수 있습니다. 상대 경로는 `backend/`를 기준으로 해석됩니다.
+
+```env
+DATABASE_PATH=data/stock_manager.db
+```
+
+주요 거래·포트폴리오 API:
+
+- `GET /api/v1/transactions`: 전체 거래 조회
+- `POST /api/v1/transactions`: 거래 등록
+- `PATCH /api/v1/transactions/{id}`: 거래 수정
+- `DELETE /api/v1/transactions/{id}`: 거래 삭제
+- `GET /api/v1/portfolio/positions`: 실제 보유 포지션 조회
+- `GET /api/v1/portfolio/summary`: 통화별 포트폴리오 요약
+
+원화와 달러 자산은 환율을 임의 적용하지 않고 KRW·USD별로 분리하여 표시합니다. 보유 수량을 초과하는 매도 거래는 저장하지 않습니다.
+
 ## Frontend 실행
 
 ```bash
@@ -68,12 +85,11 @@ npm run dev
 
 ## 다음 구현 순서
 
-1. SQLite 또는 Supabase/PostgreSQL 연결
-2. Transaction 저장 및 Position 재계산
-3. 종목 검색과 관심종목 저장
-4. OpenDART 재무·공시 화면 연결
-5. 뉴스/이벤트 + 분석 계층 확장
-6. 배포 환경 구성
+1. 종목 검색과 관심종목 저장
+2. OpenDART 재무·공시 화면 연결
+3. 뉴스/이벤트 + 분석 계층 확장
+4. 사용자 인증 및 다중 사용자 데이터 분리
+5. Supabase/PostgreSQL 전환 및 배포 환경 구성
 
 ## 안전한 데이터 표시 원칙
 

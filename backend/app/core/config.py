@@ -28,6 +28,12 @@ class Settings:
     def __init__(self) -> None:
         self.app_name = os.getenv("APP_NAME", "Stock Manager API")
         self.api_prefix = os.getenv("API_PREFIX", "/api/v1")
+        database_path = Path(os.getenv("DATABASE_PATH", "data/stock_manager.db"))
+        self.database_path = (
+            database_path
+            if database_path.is_absolute()
+            else BASE_DIR / database_path
+        ).resolve()
         legacy_mock_mode = _read_bool("MOCK_MODE", default=True)
         default_market_provider = "mock" if legacy_mock_mode else "massive"
         self.market_provider = os.getenv(

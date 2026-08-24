@@ -1,8 +1,7 @@
 from fastapi import APIRouter
-from app.services.market_service import MarketService
+from app.dependencies import market_service as service
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
-service = MarketService()
 
 
 @router.get("")

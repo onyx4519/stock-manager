@@ -17,13 +17,24 @@ Base URL: `/api/v1`
 - Every quote includes timestamp, provider, currency, and `data_status`.
 - `MARKET_PROVIDER=mock` preserves the existing development data.
 - `MARKET_PROVIDER=massive` loads configured U.S. symbols from `MASSIVE_SYMBOLS`.
-- Massive quotes use the two most recent completed daily bars and are explicitly marked `EOD`; no realtime status is inferred.
+- `MARKET_PROVIDER=kis` loads configured Korean symbols from `KIS_SYMBOLS`.
+- `MARKET_PROVIDER=hybrid` routes six-digit Korean symbols to KIS and English tickers to Massive.
+- Massive and KIS quotes use completed daily data and are explicitly marked `EOD`; no realtime status is inferred.
 
 ## Portfolio
 - `GET /api/v1/portfolio/positions`
-- `POST /api/v1/portfolio/transactions`
+- `GET /api/v1/portfolio/summary`
 
-The POST endpoint currently validates the request contract only. It does not pretend to persist data before PostgreSQL/Supabase is connected.
+Positions are rebuilt from the SQLite transaction ledger and current provider quotes. Summary values are separated by currency instead of applying an implicit exchange rate.
+
+## Transactions
+- `GET /api/v1/transactions`
+- `GET /api/v1/transactions/{id}`
+- `POST /api/v1/transactions`
+- `PATCH /api/v1/transactions/{id}`
+- `DELETE /api/v1/transactions/{id}`
+
+Transactions persist in SQLite. The API rejects unsupported symbols, currency mismatches, and any change that would make the historical position quantity negative.
 
 ## OpenDART
 - `GET /api/v1/dart/companies/search?stock_code={six-digit-code}`

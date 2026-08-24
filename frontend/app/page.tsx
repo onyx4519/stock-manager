@@ -1,18 +1,21 @@
 import { QuoteCard } from "@/components/QuoteCard";
 import { ApiMessage } from "@/components/ApiMessage";
-import { getQuotes } from "@/lib/api";
-import { mockPortfolio } from "@/lib/mockPortfolio";
+import { getPortfolioSummary, getQuotes } from "@/lib/api";
 
 export default async function DashboardPage() {
-  const quoteResult = await getQuotes()
+  const [quoteResult, portfolioResult] = await Promise.all([
+    getQuotes()
     .then((quotes) => ({ quotes, error: null }))
-    .catch((error: Error) => ({ quotes: [], error: error.message }));
-  const totalPnl = mockPortfolio.reduce((sum, item) => sum + item.unrealizedPnl, 0);
+    .catch((error: Error) => ({ quotes: [], error: error.message })),
+    getPortfolioSummary()
+      .then((summary) => ({ summary, error: null }))
+      .catch((error: Error) => ({ summary: null, error: error.message })),
+  ]);
   return (
     <div className="page">
       <div className="pageHeader">
         <div><div className="eyebrow">Dashboard</div><h1>오늘의 투자 현황</h1></div>
-        <p className="muted">시세는 백엔드 Provider 기준이며 포트폴리오는 아직 Mock 데이터입니다.</p>
+        <p className="muted">실제 EOD 시세와 저장된 거래 원장을 기준으로 계산합니다.</p>
       </div>
 
       <section>
@@ -28,11 +31,22 @@ export default async function DashboardPage() {
 
       <section>
         <h2>내 포트폴리오</h2>
-        <div className="statsGrid">
-          <div className="card stat"><span className="muted">보유 종목</span><strong>{mockPortfolio.length}</strong></div>
-          <div className="card stat"><span className="muted">미실현 손익(통화 혼합 예시)</span><strong>{totalPnl.toLocaleString("ko-KR")}</strong></div>
-          <div className="card stat"><span className="muted">포트폴리오 상태</span><strong>MOCK</strong></div>
-        </div>
+        {portfolioResult.error || !portfolioResult.summary ? (
+          <ApiMessage title="포트폴리오를 불러오지 못했습니다" message={portfolioResult.error ?? "알 수 없는 오류가 발생했습니다."} />
+        ) : (
+          <div className="statsGrid">
+            <div className="card stat"><span className="muted">보유 종목</span><strong>{portfolioResult.summary.positionsCount}</strong></div>
+            {portfolioResult.summary.currencies.map((item) => (
+              <div className="card stat" key={item.currency}>
+                <span className="muted">미실현 손익 · {item.currency}</span>
+                <strong>{item.unrealizedPnl.toLocaleString("ko-KR")}</strong>
+              </div>
+            ))}
+            {portfolioResult.summary.currencies.length === 0 && (
+              <div className="card stat"><span className="muted">포트폴리오 상태</span><strong>거래 없음</strong></div>
+            )}
+          </div>
+        )}
       </section>
 
       <section>

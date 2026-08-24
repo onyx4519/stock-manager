@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException
+from app.dependencies import market_service as service
 from app.schemas.market import StockQuote
-from app.services.market_service import MarketService
 
 router = APIRouter(prefix="/market", tags=["market"])
-service = MarketService()
 
 
 @router.get("/quotes", response_model=list[StockQuote])

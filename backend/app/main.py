@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import dart, market, portfolio, stocks
+from app.api import dart, market, portfolio, stocks, transactions
 from app.core.config import settings
 from app.providers.market import MarketProviderConfigurationError, MarketProviderError
 
@@ -18,6 +18,7 @@ app.add_middleware(
 app.include_router(market.router, prefix=settings.api_prefix)
 app.include_router(stocks.router, prefix=settings.api_prefix)
 app.include_router(portfolio.router, prefix=settings.api_prefix)
+app.include_router(transactions.router, prefix=settings.api_prefix)
 app.include_router(dart.router, prefix=settings.api_prefix)
 
 
