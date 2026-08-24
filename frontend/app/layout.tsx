@@ -18,7 +18,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Sidebar />
           <main className="mainContent">
             <header className="topbar">
-              <input aria-label="종목 검색" className="search" placeholder="기업명·티커·종목코드 검색" />
+              <form action="/stocks" className="topbarSearch">
+                <input
+                  aria-label="종목 검색"
+                  className="search"
+                  name="q"
+                  placeholder="기업명·티커·종목코드 검색"
+                  type="search"
+                />
+              </form>
               <Suspense fallback={<span className="testBanner">API 확인 중</span>}>
                 <DataModeBadge />
               </Suspense>

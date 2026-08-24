@@ -9,7 +9,15 @@ Base URL: `/api/v1`
 ## Stocks
 - `GET /api/v1/stocks?q={query}`
 - Searches by company name or symbol in the current provider.
-- MVP response uses clearly tagged Mock data.
+- Searches the symbols configured through `KIS_SYMBOLS` and `MASSIVE_SYMBOLS`.
+- Every result keeps its provider and data-status label.
+
+## Watchlist
+- `GET /api/v1/watchlist`
+- `POST /api/v1/watchlist`
+- `DELETE /api/v1/watchlist/{symbol}`
+
+Watchlist symbols persist in SQLite. Additions are validated against the configured market providers, duplicates are rejected, and the list is enriched with the latest available quote when read.
 
 ## Market
 - `GET /api/v1/market/quotes`

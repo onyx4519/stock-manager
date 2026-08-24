@@ -17,3 +17,13 @@ ON transactions(executed_at, id);
 
 CREATE INDEX IF NOT EXISTS idx_transactions_symbol_executed_at
 ON transactions(symbol, executed_at, id);
+
+CREATE TABLE IF NOT EXISTS watchlist_items (
+  symbol TEXT PRIMARY KEY CHECK(length(symbol) BETWEEN 1 AND 15),
+  company_name TEXT NOT NULL,
+  currency TEXT NOT NULL CHECK(length(currency) = 3),
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_watchlist_items_created_at
+ON watchlist_items(created_at DESC, symbol);

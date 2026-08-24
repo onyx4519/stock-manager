@@ -1,6 +1,6 @@
 # Stock Manager MVP
 
-개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용합니다. 매수·매도 거래는 SQLite에 저장되고 실제 보유 수량, 평균 단가, 평가 손익과 실현 손익으로 포트폴리오를 계산합니다.
+개인 투자 관리를 위한 반응형 웹 MVP입니다. 미국 주식은 Massive, 국내 주식은 한국투자증권 KIS의 최근 완료 거래일 EOD 시세를 사용합니다. 매수·매도 거래와 관심종목은 SQLite에 저장되며, 실제 보유 수량, 평균 단가, 평가 손익과 실현 손익으로 포트폴리오를 계산합니다.
 
 ## 구조
 
@@ -70,6 +70,10 @@ DATABASE_PATH=data/stock_manager.db
 - `DELETE /api/v1/transactions/{id}`: 거래 삭제
 - `GET /api/v1/portfolio/positions`: 실제 보유 포지션 조회
 - `GET /api/v1/portfolio/summary`: 통화별 포트폴리오 요약
+- `GET /api/v1/stocks?q={검색어}`: 연결된 종목 검색
+- `GET /api/v1/watchlist`: 관심종목 조회
+- `POST /api/v1/watchlist`: 관심종목 추가
+- `DELETE /api/v1/watchlist/{symbol}`: 관심종목 삭제
 
 원화와 달러 자산은 환율을 임의 적용하지 않고 KRW·USD별로 분리하여 표시합니다. 보유 수량을 초과하는 매도 거래는 저장하지 않습니다.
 
@@ -85,11 +89,10 @@ npm run dev
 
 ## 다음 구현 순서
 
-1. 종목 검색과 관심종목 저장
-2. OpenDART 재무·공시 화면 연결
-3. 뉴스/이벤트 + 분석 계층 확장
-4. 사용자 인증 및 다중 사용자 데이터 분리
-5. Supabase/PostgreSQL 전환 및 배포 환경 구성
+1. OpenDART 재무·공시 화면 연결
+2. 뉴스/이벤트 + 분석 계층 확장
+3. 사용자 인증 및 다중 사용자 데이터 분리
+4. Supabase/PostgreSQL 전환 및 배포 환경 구성
 
 ## 안전한 데이터 표시 원칙
 

@@ -9,6 +9,7 @@ import type {
   StockQuote,
   TransactionInput,
   TransactionType,
+  WatchlistItem,
 } from "@/types/market";
 
 const API_BASE_URL =
@@ -68,6 +69,18 @@ type BackendCurrencySummary = {
 type BackendPortfolioSummary = {
   positions_count: number;
   currencies: BackendCurrencySummary[];
+};
+
+type BackendWatchlistItem = {
+  symbol: string;
+  company_name: string;
+  currency: string;
+  created_at: string;
+  price: number | null;
+  change_percent: number | null;
+  timestamp: string | null;
+  data_status: DataStatus;
+  provider: string | null;
 };
 
 export type BackendHealth = {
@@ -180,6 +193,20 @@ function normalizeQuote(quote: BackendStockQuote): StockQuote {
   };
 }
 
+function normalizeWatchlistItem(item: BackendWatchlistItem): WatchlistItem {
+  return {
+    symbol: item.symbol,
+    companyName: item.company_name,
+    currency: item.currency,
+    createdAt: item.created_at,
+    price: item.price,
+    changePercent: item.change_percent,
+    timestamp: item.timestamp,
+    dataStatus: item.data_status,
+    provider: item.provider,
+  };
+}
+
 export async function getHealth(): Promise<BackendHealth> {
   const backendOrigin = new URL(API_BASE_URL).origin;
   return request<BackendHealth>(`${backendOrigin}/health`);
@@ -195,6 +222,32 @@ export async function getQuote(symbol: string): Promise<StockQuote> {
     `${API_BASE_URL}/market/quotes/${encodeURIComponent(symbol)}`,
   );
   return normalizeQuote(quote);
+}
+
+export async function searchStocks(query = ""): Promise<StockQuote[]> {
+  const url = new URL(`${API_BASE_URL}/stocks`);
+  if (query.trim()) url.searchParams.set("q", query.trim());
+  const quotes = await request<BackendStockQuote[]>(url.toString());
+  return quotes.map(normalizeQuote);
+}
+
+export async function getWatchlist(): Promise<WatchlistItem[]> {
+  const items = await request<BackendWatchlistItem[]>(`${API_BASE_URL}/watchlist`);
+  return items.map(normalizeWatchlistItem);
+}
+
+export async function addWatchlistItem(symbol: string): Promise<WatchlistItem> {
+  const item = await request<BackendWatchlistItem>(`${API_BASE_URL}/watchlist`, {
+    method: "POST",
+    body: JSON.stringify({ symbol }),
+  });
+  return normalizeWatchlistItem(item);
+}
+
+export async function deleteWatchlistItem(symbol: string): Promise<void> {
+  return request<void>(`${API_BASE_URL}/watchlist/${encodeURIComponent(symbol)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function getPortfolioPositions(): Promise<PortfolioPosition[]> {

@@ -11,6 +11,18 @@ export type StockQuote = {
   provider: string;
 };
 
+export type WatchlistItem = {
+  symbol: string;
+  companyName: string;
+  currency: string;
+  createdAt: string;
+  price: number | null;
+  changePercent: number | null;
+  timestamp: string | null;
+  dataStatus: DataStatus;
+  provider: string | null;
+};
+
 export type PortfolioPosition = {
   symbol: string;
   companyName: string;
