@@ -65,6 +65,7 @@ class AuthUser(BaseModel):
     birth_date: date | None = None
     gender: Gender = Gender.UNSPECIFIED
     role: UserRole = UserRole.USER
+    password_change_required: bool = False
     personalization_consent: bool = False
     personalization_consent_at: datetime | None = None
     service_notification_consent: bool = False

@@ -44,6 +44,7 @@ type BackendAuthUser = {
   birth_date: string | null;
   gender: Gender;
   role: UserRole;
+  password_change_required: boolean;
   personalization_consent: boolean;
   personalization_consent_at: string | null;
   service_notification_consent: boolean;
@@ -320,6 +321,7 @@ function normalizeAuthUser(user: BackendAuthUser): AuthUser {
     birthDate: user.birth_date,
     gender: user.gender,
     role: user.role,
+    passwordChangeRequired: user.password_change_required,
     personalizationConsent: user.personalization_consent,
     personalizationConsentAt: user.personalization_consent_at,
     serviceNotificationConsent: user.service_notification_consent,

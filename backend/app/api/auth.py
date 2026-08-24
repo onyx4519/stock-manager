@@ -40,12 +40,25 @@ def get_session_token(
     return credentials.credentials
 
 
-def get_current_user(token: Annotated[str, Depends(get_session_token)]) -> AuthUser:
+def get_authenticated_user(
+    token: Annotated[str, Depends(get_session_token)],
+) -> AuthUser:
     user = service.authenticate(token)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session is invalid or expired.",
+        )
+    return user
+
+
+def get_current_user(
+    user: Annotated[AuthUser, Depends(get_authenticated_user)],
+) -> AuthUser:
+    if user.password_change_required:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Password change required.",
         )
     return user
 
@@ -78,7 +91,7 @@ def login(payload: UserCredentials) -> AuthSession:
 
 
 @router.get("/me", response_model=AuthUser)
-def me(user: Annotated[AuthUser, Depends(get_current_user)]) -> AuthUser:
+def me(user: Annotated[AuthUser, Depends(get_authenticated_user)]) -> AuthUser:
     return user
 
 
@@ -104,7 +117,7 @@ def update_notification_preference(
 @router.patch("/password", status_code=status.HTTP_204_NO_CONTENT)
 def change_password(
     payload: PasswordChangeRequest,
-    user: Annotated[AuthUser, Depends(get_current_user)],
+    user: Annotated[AuthUser, Depends(get_authenticated_user)],
 ) -> None:
     try:
         service.change_password(

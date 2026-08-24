@@ -41,6 +41,7 @@ export type AuthUser = {
   birthDate: string | null;
   gender: Gender;
   role: UserRole;
+  passwordChangeRequired: boolean;
   personalizationConsent: boolean;
   personalizationConsentAt: string | null;
   serviceNotificationConsent: boolean;

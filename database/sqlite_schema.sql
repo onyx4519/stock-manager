@@ -8,6 +8,11 @@ CREATE TABLE IF NOT EXISTS users (
     CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE')),
   role TEXT NOT NULL DEFAULT 'USER'
     CHECK(role IN ('USER', 'ADMIN')),
+  failed_login_attempts INTEGER NOT NULL DEFAULT 0
+    CHECK(failed_login_attempts >= 0),
+  password_change_required INTEGER NOT NULL DEFAULT 0
+    CHECK(password_change_required IN (0, 1)),
+  last_failed_login_at TEXT,
   account_creation_consent_at TEXT,
   account_creation_consent_version TEXT,
   privacy_collection_consent_at TEXT,

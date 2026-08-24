@@ -32,6 +32,7 @@ class SQLiteDatabase:
                 self._migrate_user_ownership(connection)
                 self._migrate_basic_profile(connection)
                 self._migrate_user_roles(connection)
+                self._migrate_login_security(connection)
                 self._migrate_account_creation_consent(connection)
                 self._migrate_privacy_and_notification_consents(connection)
                 self._migrate_personalization_consent(connection)
@@ -168,6 +169,27 @@ class SQLiteDatabase:
                 CHECK(role IN ('USER', 'ADMIN'))
                 """
             )
+
+    @staticmethod
+    def _migrate_login_security(connection: sqlite3.Connection) -> None:
+        user_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info('users')")
+        }
+        additions = {
+            "failed_login_attempts": (
+                "INTEGER NOT NULL DEFAULT 0 CHECK(failed_login_attempts >= 0)"
+            ),
+            "password_change_required": (
+                "INTEGER NOT NULL DEFAULT 0 "
+                "CHECK(password_change_required IN (0, 1))"
+            ),
+            "last_failed_login_at": "TEXT",
+        }
+        for column, definition in additions.items():
+            if column not in user_columns:
+                connection.execute(
+                    f"ALTER TABLE users ADD COLUMN {column} {definition}"
+                )
 
     @staticmethod
     def _migrate_account_creation_consent(

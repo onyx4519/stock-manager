@@ -13,14 +13,52 @@ import {
 } from "@/app/account/actions";
 
 
-export function PasswordChangePanel({ minimumLength }: { minimumLength: number }) {
-  const [open, setOpen] = useState(false);
+export function PasswordChangeForm({
+  minimumLength,
+  onCancel,
+}: {
+  minimumLength: number;
+  onCancel?: () => void;
+}) {
   const [state, action, pending] = useActionState<PasswordChangeState, FormData>(
     changePasswordAction,
     undefined,
   );
+
+  return (
+    <form action={action} className="passwordChangeForm">
+      <label>
+        현재 비밀번호
+        <input autoComplete="current-password" name="currentPassword" required type="password" />
+      </label>
+      <label>
+        새 비밀번호
+        <input autoComplete="new-password" minLength={minimumLength} name="newPassword" required type="password" />
+      </label>
+      <label>
+        새 비밀번호 확인
+        <input autoComplete="new-password" minLength={minimumLength} name="newPasswordConfirmation" required type="password" />
+      </label>
+      <p className="dataNotice">새 비밀번호는 {minimumLength}자 이상이어야 합니다.</p>
+      {state?.message && <p className="formMessageText" role="alert">{state.message}</p>}
+      <div className="deletionActions">
+        {onCancel && (
+          <button className="accountTextButton" disabled={pending} onClick={onCancel} type="button">
+            취소
+          </button>
+        )}
+        <button className="primaryButton" disabled={pending} type="submit">
+          {pending ? "변경 중" : "비밀번호 변경"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+
+export function PasswordChangePanel({ minimumLength }: { minimumLength: number }) {
+  const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -30,8 +68,6 @@ export function PasswordChangePanel({ minimumLength }: { minimumLength: number }
   }, [open]);
 
   const close = () => {
-    if (pending) return;
-    formRef.current?.reset();
     setOpen(false);
   };
 
@@ -62,30 +98,7 @@ export function PasswordChangePanel({ minimumLength }: { minimumLength: number }
             변경 후 모든 기기에서 로그아웃되며 새 비밀번호로 다시 로그인해야 합니다.
           </p>
         </div>
-        <form action={action} className="passwordChangeForm" ref={formRef}>
-          <label>
-            현재 비밀번호
-            <input autoComplete="current-password" name="currentPassword" required type="password" />
-          </label>
-          <label>
-            새 비밀번호
-            <input autoComplete="new-password" minLength={minimumLength} name="newPassword" required type="password" />
-          </label>
-          <label>
-            새 비밀번호 확인
-            <input autoComplete="new-password" minLength={minimumLength} name="newPasswordConfirmation" required type="password" />
-          </label>
-          <p className="dataNotice">새 비밀번호는 {minimumLength}자 이상이어야 합니다.</p>
-          {state?.message && <p className="formMessageText" role="alert">{state.message}</p>}
-          <div className="deletionActions">
-            <button className="accountTextButton" disabled={pending} onClick={close} type="button">
-              취소
-            </button>
-            <button className="primaryButton" disabled={pending} type="submit">
-              {pending ? "변경 중" : "비밀번호 변경"}
-            </button>
-          </div>
-        </form>
+        <PasswordChangeForm minimumLength={minimumLength} onCancel={close} />
       </dialog>
     </>
   );

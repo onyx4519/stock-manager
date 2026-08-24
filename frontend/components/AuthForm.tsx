@@ -149,6 +149,15 @@ export function AuthForm({
           type="password"
         />
       </label>
+      {!registering && (
+        <label className="autoLoginOption">
+          <input name="rememberMe" type="checkbox" />
+          <span>
+            자동 로그인
+            <small>이 브라우저에서 30일간 로그인 상태를 유지합니다.</small>
+          </span>
+        </label>
+      )}
       {state?.message && (!registering || !consentModalOpen) && (
         <p className="formMessageText" role="alert">{state.message}</p>
       )}

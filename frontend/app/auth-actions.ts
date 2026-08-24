@@ -15,7 +15,6 @@ export type AuthActionState = { message?: string } | undefined;
 
 const cookieOptions = {
   httpOnly: true,
-  maxAge: 60 * 60 * 24 * 30,
   path: "/",
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
@@ -59,9 +58,15 @@ export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  let passwordChangeRequired = false;
   try {
     const session = await loginUser(credentials(formData));
-    (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);
+    passwordChangeRequired = session.user.passwordChangeRequired;
+    const rememberMe = formData.get("rememberMe") === "on";
+    (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, {
+      ...cookieOptions,
+      ...(rememberMe ? { maxAge: 60 * 60 * 24 * 30 } : {}),
+    });
   } catch (error) {
     return {
       message: error instanceof ApiError && error.status === 401
@@ -69,6 +74,7 @@ export async function loginAction(
         : "로그인 요청을 처리하지 못했습니다.",
     };
   }
+  if (passwordChangeRequired) redirect("/change-password");
   redirect("/");
 }
 

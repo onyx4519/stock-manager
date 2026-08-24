@@ -133,6 +133,7 @@ class AuthRepository:
             row = connection.execute(
                 """
                 SELECT id, email, display_name, password_hash, birth_date, gender, role,
+                       failed_login_attempts, password_change_required,
                        personalization_consent, personalization_consent_at,
                        service_notification_consent,
                        service_notification_consent_at,
@@ -142,15 +143,40 @@ class AuthRepository:
                 """,
                 (email.casefold(), self.database.LEGACY_USER_ID),
             ).fetchone()
-        if row is None or not self._verify_password(password, row["password_hash"]):
-            return None
-        return AuthUser.model_validate(dict(row))
+            if row is None:
+                return None
+            if not self._verify_password(password, row["password_hash"]):
+                connection.execute(
+                    """
+                    UPDATE users
+                    SET failed_login_attempts = failed_login_attempts + 1,
+                        password_change_required = CASE
+                          WHEN failed_login_attempts + 1 >= 5 THEN 1
+                          ELSE password_change_required
+                        END,
+                        last_failed_login_at = ?
+                    WHERE id = ?
+                    """,
+                    (datetime.now(timezone.utc).isoformat(), row["id"]),
+                )
+                return None
+            if not row["password_change_required"]:
+                connection.execute(
+                    """
+                    UPDATE users
+                    SET failed_login_attempts = 0, last_failed_login_at = NULL
+                    WHERE id = ?
+                    """,
+                    (row["id"],),
+                )
+            return AuthUser.model_validate(dict(row))
 
     def get_user(self, user_id: str) -> AuthUser | None:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
                 SELECT id, email, display_name, birth_date, gender, role,
+                       password_change_required,
                        personalization_consent,
                        personalization_consent_at,
                        service_notification_consent,
@@ -188,6 +214,7 @@ class AuthRepository:
                 """
                 SELECT users.id, users.email, users.display_name,
                        users.birth_date, users.gender, users.role,
+                       users.password_change_required,
                        users.personalization_consent,
                        users.personalization_consent_at,
                        users.service_notification_consent,
@@ -228,7 +255,14 @@ class AuthRepository:
             ):
                 return False
             connection.execute(
-                "UPDATE users SET password_hash = ? WHERE id = ?",
+                """
+                UPDATE users
+                SET password_hash = ?,
+                    failed_login_attempts = 0,
+                    password_change_required = 0,
+                    last_failed_login_at = NULL
+                WHERE id = ?
+                """,
                 (self._hash_password(new_password), user_id),
             )
             connection.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))

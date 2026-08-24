@@ -68,6 +68,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
         assert second.status_code == 201
         assert first.json()["user"]["birth_date"] == "2000-01-02"
         assert first.json()["user"]["role"] == "USER"
+        assert first.json()["user"]["password_change_required"] is False
         assert first.json()["user"]["gender"] == "UNSPECIFIED"
         assert first.json()["user"]["personalization_consent"] is False
         assert first.json()["user"]["personalization_consent_at"] is None
@@ -174,6 +175,112 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
             json={"email": payload["email"], "password": "wrong-pass"},
         )
         assert invalid.status_code == 401
+    finally:
+        auth_api.service = original
+
+
+def test_five_failed_logins_require_password_change(tmp_path):
+    database = SQLiteDatabase(tmp_path / "forced-password-change.db")
+    original = auth_api.service
+    auth_api.service = AuthService(AuthRepository(database))
+    client = TestClient(app)
+    payload = {
+        "email": "locked@example.com",
+        "display_name": "Locked User",
+        "password": "safe-password",
+        "birth_date": "2001-03-04",
+        "gender": "UNSPECIFIED",
+        "account_creation_consent": True,
+        "privacy_collection_consent": True,
+    }
+    try:
+        registration = client.post("/api/v1/auth/register", json=payload)
+        assert registration.status_code == 201
+
+        for _ in range(4):
+            invalid = client.post(
+                "/api/v1/auth/login",
+                json={"email": payload["email"], "password": "wrong-pass"},
+            )
+            assert invalid.status_code == 401
+
+        with database.connection() as connection:
+            before_limit = connection.execute(
+                """
+                SELECT failed_login_attempts, password_change_required
+                FROM users WHERE email = ?
+                """,
+                (payload["email"],),
+            ).fetchone()
+        assert before_limit["failed_login_attempts"] == 4
+        assert before_limit["password_change_required"] == 0
+
+        fifth_failure = client.post(
+            "/api/v1/auth/login",
+            json={"email": payload["email"], "password": "wrong-pass"},
+        )
+        assert fifth_failure.status_code == 401
+
+        with database.connection() as connection:
+            at_limit = connection.execute(
+                """
+                SELECT failed_login_attempts, password_change_required,
+                       last_failed_login_at
+                FROM users WHERE email = ?
+                """,
+                (payload["email"],),
+            ).fetchone()
+        assert at_limit["failed_login_attempts"] == 5
+        assert at_limit["password_change_required"] == 1
+        assert at_limit["last_failed_login_at"]
+
+        forced_login = client.post(
+            "/api/v1/auth/login",
+            json={"email": payload["email"], "password": payload["password"]},
+        )
+        assert forced_login.status_code == 200
+        assert forced_login.json()["user"]["password_change_required"] is True
+        forced_headers = {
+            "Authorization": f"Bearer {forced_login.json()['access_token']}"
+        }
+        assert client.get("/api/v1/auth/me", headers=forced_headers).status_code == 200
+        blocked = client.patch(
+            "/api/v1/auth/preferences/notifications",
+            json={"service_notification_consent": True},
+            headers=forced_headers,
+        )
+        assert blocked.status_code == 403
+        assert blocked.json()["detail"] == "Password change required."
+
+        changed = client.patch(
+            "/api/v1/auth/password",
+            json={
+                "current_password": payload["password"],
+                "new_password": "new-safe-password",
+            },
+            headers=forced_headers,
+        )
+        assert changed.status_code == 204
+        assert client.get("/api/v1/auth/me", headers=forced_headers).status_code == 401
+
+        new_login = client.post(
+            "/api/v1/auth/login",
+            json={"email": payload["email"], "password": "new-safe-password"},
+        )
+        assert new_login.status_code == 200
+        assert new_login.json()["user"]["password_change_required"] is False
+        with database.connection() as connection:
+            reset = connection.execute(
+                """
+                SELECT failed_login_attempts, password_change_required,
+                       last_failed_login_at
+                FROM users WHERE email = ?
+                """,
+                (payload["email"],),
+            ).fetchone()
+        assert reset["failed_login_attempts"] == 0
+        assert reset["password_change_required"] == 0
+        assert reset["last_failed_login_at"] is None
     finally:
         auth_api.service = original
 
@@ -578,6 +685,8 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
         row = connection.execute(
             """
             SELECT birth_date, gender, role,
+                   failed_login_attempts, password_change_required,
+                   last_failed_login_at,
                    account_creation_consent_at,
                    account_creation_consent_version,
                    privacy_collection_consent_at,
@@ -603,6 +712,9 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
     assert row["birth_date"] is None
     assert row["gender"] == "UNSPECIFIED"
     assert row["role"] == "USER"
+    assert row["failed_login_attempts"] == 0
+    assert row["password_change_required"] == 0
+    assert row["last_failed_login_at"] is None
     assert row["account_creation_consent_at"] is None
     assert row["account_creation_consent_version"] is None
     assert row["privacy_collection_consent_at"] is None
