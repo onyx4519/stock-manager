@@ -11,9 +11,24 @@ export const metadata: Metadata = {
   description: "초보자용 개인 주식 관리 웹 MVP",
 };
 
+const themeInitializationScript = `
+  (() => {
+    try {
+      const saved = localStorage.getItem("stock_manager_theme");
+      const mode = saved === "light" || saved === "system" ? saved : "dark";
+      document.documentElement.dataset.theme = mode;
+    } catch {
+      document.documentElement.dataset.theme = "dark";
+    }
+  })();
+`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html data-theme="dark" lang="ko" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
+      </head>
       <body>
         <div className="appShell">
           <Sidebar />
