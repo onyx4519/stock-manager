@@ -71,8 +71,8 @@ export default async function AccountPage() {
             </dd>
           </div>
         </dl>
-        <PasswordChangePanel minimumLength={user.role === "ADMIN" ? 12 : 8} />
         <NotificationSettingsForm enabled={user.serviceNotificationConsent} />
+        <PasswordChangePanel minimumLength={user.role === "ADMIN" ? 12 : 8} />
         <DeleteAccountPanel userId={user.id} />
       </section>
     </div>
