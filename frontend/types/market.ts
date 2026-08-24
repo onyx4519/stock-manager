@@ -70,6 +70,41 @@ export type AuthSession = {
   user: AuthUser;
 };
 
+export type AdminRecentUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  createdAt: string;
+};
+
+export type AdminDeletionReasonCount = {
+  reason:
+    | "MISSING_CONTENT"
+    | "DIFFICULT_TO_USE"
+    | "DATA_QUALITY"
+    | "PRIVACY_CONCERN"
+    | "NO_LONGER_NEEDED"
+    | "NO_REASON";
+  count: number;
+};
+
+export type AdminDashboardSummary = {
+  generatedAt: string;
+  totalUsers: number;
+  adminUsers: number;
+  regularUsers: number;
+  activeSessions: number;
+  passwordChangeRequiredUsers: number;
+  serviceNotificationUsers: number;
+  personalizationUsers: number;
+  totalTransactions: number;
+  totalWatchlistItems: number;
+  totalNotifications: number;
+  recentUsers: AdminRecentUser[];
+  deletionReasons: AdminDeletionReasonCount[];
+};
+
 export type WatchlistItem = {
   symbol: string;
   companyName: string;

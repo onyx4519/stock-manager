@@ -10,3 +10,9 @@ export async function requireCurrentUser() {
   if (user.passwordChangeRequired) redirect("/change-password");
   return user;
 }
+
+export async function requireAdmin() {
+  const user = await requireCurrentUser();
+  if (user.role !== "ADMIN") redirect("/");
+  return user;
+}

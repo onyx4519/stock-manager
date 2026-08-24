@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import type {
+  AdminDashboardSummary,
   CurrencySummary,
   AuthSession,
   AuthUser,
@@ -71,6 +72,31 @@ type BackendAuthSession = {
   token_type: string;
   expires_at: string;
   user: BackendAuthUser;
+};
+
+type BackendAdminDashboardSummary = {
+  generated_at: string;
+  total_users: number;
+  admin_users: number;
+  regular_users: number;
+  active_sessions: number;
+  password_change_required_users: number;
+  service_notification_users: number;
+  personalization_users: number;
+  total_transactions: number;
+  total_watchlist_items: number;
+  total_notifications: number;
+  recent_users: Array<{
+    id: string;
+    email: string;
+    display_name: string;
+    role: UserRole;
+    created_at: string;
+  }>;
+  deletion_reasons: Array<{
+    reason: AdminDashboardSummary["deletionReasons"][number]["reason"];
+    count: number;
+  }>;
 };
 
 type BackendStockQuote = {
@@ -590,6 +616,33 @@ export async function changePassword(input: {
       new_password: input.newPassword,
     }),
   });
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboardSummary> {
+  const result = await request<BackendAdminDashboardSummary>(
+    `${API_BASE_URL}/admin/dashboard`,
+  );
+  return {
+    generatedAt: result.generated_at,
+    totalUsers: result.total_users,
+    adminUsers: result.admin_users,
+    regularUsers: result.regular_users,
+    activeSessions: result.active_sessions,
+    passwordChangeRequiredUsers: result.password_change_required_users,
+    serviceNotificationUsers: result.service_notification_users,
+    personalizationUsers: result.personalization_users,
+    totalTransactions: result.total_transactions,
+    totalWatchlistItems: result.total_watchlist_items,
+    totalNotifications: result.total_notifications,
+    recentUsers: result.recent_users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      displayName: user.display_name,
+      role: user.role,
+      createdAt: user.created_at,
+    })),
+    deletionReasons: result.deletion_reasons,
+  };
 }
 
 export async function getNotifications(): Promise<NotificationList> {

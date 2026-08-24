@@ -26,6 +26,11 @@ export async function AccountStatus() {
         notifications={notifications}
         showBadge={user.serviceNotificationConsent && notifications.unreadCount > 0}
       />
+      {user.role === "ADMIN" && (
+        <Link className="adminDashboardLink" href="/admin">
+          관리자
+        </Link>
+      )}
       <Link className="accountNameLink" href="/account">
         {user.displayName}
       </Link>

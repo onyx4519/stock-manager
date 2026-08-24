@@ -1,5 +1,6 @@
 from app.core.config import settings
 from app.db import (
+    AdminRepository,
     AuthRepository,
     NotificationRepository,
     SQLiteDatabase,
@@ -18,6 +19,7 @@ from app.services.watchlist_service import WatchlistService
 market_service = MarketService()
 stock_directory_service = StockDirectoryService(market_service)
 database = SQLiteDatabase(settings.database_path)
+admin_repository = AdminRepository(database)
 auth_repository = AuthRepository(database)
 notification_repository = NotificationRepository(database)
 auth_service = AuthService(auth_repository, notification_repository)

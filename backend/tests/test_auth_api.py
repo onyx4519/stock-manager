@@ -4,10 +4,17 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
+from app.api import admin as admin_api
 from app.api import portfolio as portfolio_api
 from app.api import transactions as transactions_api
 from app.api import watchlist as watchlist_api
-from app.db import AuthRepository, SQLiteDatabase, TransactionRepository, WatchlistRepository
+from app.db import (
+    AdminRepository,
+    AuthRepository,
+    SQLiteDatabase,
+    TransactionRepository,
+    WatchlistRepository,
+)
 from app.main import app
 from app.providers.mock.market_provider import MockMarketProvider
 from app.services.auth_service import AuthService
@@ -374,6 +381,105 @@ def test_admin_account_creation_and_server_side_permission_check(tmp_path):
             )
     finally:
         auth_api.service = original
+
+
+def test_admin_dashboard_is_private_and_returns_service_summary(tmp_path):
+    database = SQLiteDatabase(tmp_path / "admin-dashboard.db")
+    auth_service = AuthService(AuthRepository(database))
+    originals = (auth_api.service, admin_api.repository)
+    auth_api.service = auth_service
+    admin_api.repository = AdminRepository(database)
+    client = TestClient(app)
+    try:
+        auth_service.create_admin(
+            email="dashboard-admin@example.com",
+            display_name="Dashboard Admin",
+            password="strong-admin-password",
+        )
+        regular = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "dashboard-user@example.com",
+                "display_name": "Dashboard User",
+                "password": "safe-password",
+                "birth_date": "2000-01-01",
+                "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
+                "privacy_collection_consent": True,
+                "personalization_consent": True,
+                "service_notification_consent": True,
+            },
+        )
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "dashboard-admin@example.com",
+                "password": "strong-admin-password",
+            },
+        )
+        assert regular.status_code == 201
+        assert admin_login.status_code == 200
+        regular_user_id = regular.json()["user"]["id"]
+        regular_headers = {
+            "Authorization": f"Bearer {regular.json()['access_token']}"
+        }
+        admin_headers = {
+            "Authorization": f"Bearer {admin_login.json()['access_token']}"
+        }
+
+        with database.connection() as connection:
+            now = "2026-08-25T00:00:00+00:00"
+            connection.execute(
+                """
+                INSERT INTO transactions (
+                  user_id, symbol, transaction_type, quantity, price, currency,
+                  fee, tax, executed_at, created_at, updated_at
+                ) VALUES (?, 'NVDA', 'BUY', '1', '100', 'USD', '0', '0', ?, ?, ?)
+                """,
+                (regular_user_id, now, now, now),
+            )
+            connection.execute(
+                """
+                INSERT INTO watchlist_items (
+                  user_id, symbol, company_name, currency, created_at
+                ) VALUES (?, 'NVDA', 'NVIDIA Corporation', 'USD', ?)
+                """,
+                (regular_user_id, now),
+            )
+            connection.execute(
+                """
+                INSERT INTO account_deletion_feedback (reason, created_at)
+                VALUES ('DATA_QUALITY', ?)
+                """,
+                (now,),
+            )
+
+        assert client.get(
+            "/api/v1/admin/dashboard",
+            headers=regular_headers,
+        ).status_code == 403
+        dashboard = client.get(
+            "/api/v1/admin/dashboard",
+            headers=admin_headers,
+        )
+        assert dashboard.status_code == 200
+        payload = dashboard.json()
+        assert payload["total_users"] == 2
+        assert payload["admin_users"] == 1
+        assert payload["regular_users"] == 1
+        assert payload["active_sessions"] == 2
+        assert payload["service_notification_users"] == 1
+        assert payload["personalization_users"] == 1
+        assert payload["total_transactions"] == 1
+        assert payload["total_watchlist_items"] == 1
+        assert payload["total_notifications"] == 1
+        assert len(payload["recent_users"]) == 2
+        assert payload["deletion_reasons"] == [
+            {"reason": "DATA_QUALITY", "count": 1}
+        ]
+        assert "password_hash" not in payload["recent_users"][0]
+    finally:
+        auth_api.service, admin_api.repository = originals
 
 
 def test_password_change_verifies_current_password_and_revokes_sessions(tmp_path):
