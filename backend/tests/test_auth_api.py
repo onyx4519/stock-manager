@@ -46,6 +46,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "birth_date": "2000-01-02",
                 "gender": "UNSPECIFIED",
                 "account_creation_consent": True,
+                "privacy_collection_consent": True,
             },
         )
         second = client.post(
@@ -57,7 +58,9 @@ def test_authentication_and_user_data_isolation(tmp_path):
                 "birth_date": "1995-05-15",
                 "gender": "FEMALE",
                 "account_creation_consent": True,
+                "privacy_collection_consent": True,
                 "personalization_consent": True,
+                "service_notification_consent": True,
             },
         )
         assert first.status_code == 201
@@ -69,12 +72,18 @@ def test_authentication_and_user_data_isolation(tmp_path):
         assert second.json()["user"]["personalization_consent"] is True
         assert second.json()["user"]["gender"] == "FEMALE"
         assert second.json()["user"]["personalization_consent_at"]
+        assert first.json()["user"]["service_notification_consent"] is False
+        assert second.json()["user"]["service_notification_consent"] is True
+        assert second.json()["user"]["service_notification_consent_at"]
         with database.connection() as connection:
             consent_record = connection.execute(
                 """
                 SELECT account_creation_consent_at,
                        account_creation_consent_version,
-                       personalization_consent_version
+                       privacy_collection_consent_at,
+                       privacy_collection_consent_version,
+                       personalization_consent_version,
+                       service_notification_consent_version
                 FROM users WHERE id = ?
                 """,
                 (second.json()["user"]["id"],),
@@ -85,8 +94,17 @@ def test_authentication_and_user_data_isolation(tmp_path):
             == AuthRepository.ACCOUNT_CREATION_CONSENT_VERSION
         )
         assert (
+            consent_record["privacy_collection_consent_version"]
+            == AuthRepository.PRIVACY_COLLECTION_CONSENT_VERSION
+        )
+        assert consent_record["privacy_collection_consent_at"]
+        assert (
             consent_record["personalization_consent_version"]
             == AuthRepository.PERSONALIZATION_CONSENT_VERSION
+        )
+        assert (
+            consent_record["service_notification_consent_version"]
+            == AuthRepository.SERVICE_NOTIFICATION_CONSENT_VERSION
         )
         first_headers = {
             "Authorization": f"Bearer {first.json()['access_token']}"
@@ -113,6 +131,14 @@ def test_authentication_and_user_data_isolation(tmp_path):
         assert me.json()["birth_date"] == "2000-01-02"
         assert me.json()["gender"] == "UNSPECIFIED"
         assert me.json()["personalization_consent"] is False
+        preference = client.patch(
+            "/api/v1/auth/preferences/notifications",
+            json={"service_notification_consent": True},
+            headers=first_headers,
+        )
+        assert preference.status_code == 200
+        assert preference.json()["service_notification_consent"] is True
+        assert preference.json()["service_notification_consent_at"]
         assert client.post("/api/v1/auth/logout", headers=first_headers).status_code == 204
         assert client.get("/api/v1/auth/me", headers=first_headers).status_code == 401
     finally:
@@ -136,6 +162,7 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
         "birth_date": "2001-03-04",
         "gender": "MALE",
         "account_creation_consent": True,
+        "privacy_collection_consent": True,
     }
     try:
         assert client.post("/api/v1/auth/register", json=payload).status_code == 201
@@ -161,6 +188,7 @@ def test_auth_rejects_invalid_basic_profile_values(tmp_path):
         "birth_date": "2000-01-01",
         "gender": "UNSPECIFIED",
         "account_creation_consent": True,
+        "privacy_collection_consent": True,
     }
     try:
         missing_birth_date = dict(base_payload)
@@ -189,6 +217,17 @@ def test_auth_rejects_invalid_basic_profile_values(tmp_path):
         assert client.post(
             "/api/v1/auth/register", json=declined_consent
         ).status_code == 422
+
+        missing_privacy = dict(base_payload)
+        missing_privacy.pop("privacy_collection_consent")
+        assert client.post(
+            "/api/v1/auth/register", json=missing_privacy
+        ).status_code == 422
+
+        declined_privacy = {**base_payload, "privacy_collection_consent": False}
+        assert client.post(
+            "/api/v1/auth/register", json=declined_privacy
+        ).status_code == 422
     finally:
         auth_api.service = original
 
@@ -210,6 +249,7 @@ def test_account_deletion_requires_confirmation_and_keeps_only_anonymous_reason(
                 "birth_date": "1999-12-31",
                 "gender": "UNSPECIFIED",
                 "account_creation_consent": True,
+                "privacy_collection_consent": True,
             },
         )
         assert registration.status_code == 201
@@ -378,8 +418,13 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
             SELECT birth_date, gender,
                    account_creation_consent_at,
                    account_creation_consent_version,
+                   privacy_collection_consent_at,
+                   privacy_collection_consent_version,
                    personalization_consent, personalization_consent_at,
-                   personalization_consent_version
+                   personalization_consent_version,
+                   service_notification_consent,
+                   service_notification_consent_at,
+                   service_notification_consent_version
             FROM users WHERE id = 'existing-user'
             """
         ).fetchone()
@@ -397,7 +442,12 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
     assert row["gender"] == "UNSPECIFIED"
     assert row["account_creation_consent_at"] is None
     assert row["account_creation_consent_version"] is None
+    assert row["privacy_collection_consent_at"] is None
+    assert row["privacy_collection_consent_version"] is None
     assert row["personalization_consent"] == 0
     assert row["personalization_consent_at"] is None
     assert row["personalization_consent_version"] is None
+    assert row["service_notification_consent"] == 0
+    assert row["service_notification_consent_at"] is None
+    assert row["service_notification_consent_version"] is None
     assert [item["reason"] for item in feedback] == ["DATA_QUALITY"]

@@ -15,7 +15,9 @@ class DuplicateUserError(ValueError):
 class AuthRepository:
     PASSWORD_ITERATIONS = 600_000
     ACCOUNT_CREATION_CONSENT_VERSION = "2026-08-25-v1"
+    PRIVACY_COLLECTION_CONSENT_VERSION = "2026-08-25-v1"
     PERSONALIZATION_CONSENT_VERSION = "2026-08-25-v1"
+    SERVICE_NOTIFICATION_CONSENT_VERSION = "2026-08-25-v1"
     SESSION_DAYS = 30
 
     def __init__(self, database: SQLiteDatabase) -> None:
@@ -30,7 +32,9 @@ class AuthRepository:
         birth_date: date | None = None,
         gender: Gender = Gender.UNSPECIFIED,
         account_creation_consent: bool = False,
+        privacy_collection_consent: bool = False,
         personalization_consent: bool = False,
+        service_notification_consent: bool = False,
     ) -> AuthUser:
         user_id = str(uuid.uuid4())
         created_at = datetime.now(timezone.utc).isoformat()
@@ -40,10 +44,24 @@ class AuthRepository:
             if account_creation_consent
             else None
         )
+        privacy_consented_at = created_at if privacy_collection_consent else None
+        privacy_consent_version = (
+            self.PRIVACY_COLLECTION_CONSENT_VERSION
+            if privacy_collection_consent
+            else None
+        )
         consented_at = created_at if personalization_consent else None
         consent_version = (
             self.PERSONALIZATION_CONSENT_VERSION
             if personalization_consent
+            else None
+        )
+        notification_consented_at = (
+            created_at if service_notification_consent else None
+        )
+        notification_consent_version = (
+            self.SERVICE_NOTIFICATION_CONSENT_VERSION
+            if service_notification_consent
             else None
         )
         password_hash = self._hash_password(password)
@@ -60,9 +78,15 @@ class AuthRepository:
                       birth_date, gender,
                       account_creation_consent_at,
                       account_creation_consent_version,
+                      privacy_collection_consent_at,
+                      privacy_collection_consent_version,
                       personalization_consent, personalization_consent_at,
-                      personalization_consent_version, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                      personalization_consent_version,
+                      service_notification_consent,
+                      service_notification_consent_at,
+                      service_notification_consent_version,
+                      created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
@@ -73,9 +97,14 @@ class AuthRepository:
                         gender.value,
                         account_consented_at,
                         account_consent_version,
+                        privacy_consented_at,
+                        privacy_consent_version,
                         int(personalization_consent),
                         consented_at,
                         consent_version,
+                        int(service_notification_consent),
+                        notification_consented_at,
+                        notification_consent_version,
                         created_at,
                     ),
                 )
@@ -102,6 +131,8 @@ class AuthRepository:
                 """
                 SELECT id, email, display_name, password_hash, birth_date, gender,
                        personalization_consent, personalization_consent_at,
+                       service_notification_consent,
+                       service_notification_consent_at,
                        created_at
                 FROM users
                 WHERE email = ? COLLATE NOCASE AND id != ?
@@ -118,7 +149,9 @@ class AuthRepository:
                 """
                 SELECT id, email, display_name, birth_date, gender,
                        personalization_consent,
-                       personalization_consent_at, created_at
+                       personalization_consent_at,
+                       service_notification_consent,
+                       service_notification_consent_at, created_at
                 FROM users WHERE id = ? AND id != ?
                 """,
                 (user_id, self.database.LEGACY_USER_ID),
@@ -153,7 +186,10 @@ class AuthRepository:
                 SELECT users.id, users.email, users.display_name,
                        users.birth_date, users.gender,
                        users.personalization_consent,
-                       users.personalization_consent_at, users.created_at
+                       users.personalization_consent_at,
+                       users.service_notification_consent,
+                       users.service_notification_consent_at,
+                       users.created_at
                 FROM sessions
                 JOIN users ON users.id = sessions.user_id
                 WHERE sessions.token_hash = ? AND sessions.expires_at > ?
@@ -168,6 +204,34 @@ class AuthRepository:
                 "DELETE FROM sessions WHERE token_hash = ?",
                 (self._token_hash(token),),
             )
+
+    def update_service_notification_consent(
+        self,
+        user_id: str,
+        enabled: bool,
+    ) -> AuthUser | None:
+        consented_at = datetime.now(timezone.utc).isoformat() if enabled else None
+        consent_version = (
+            self.SERVICE_NOTIFICATION_CONSENT_VERSION if enabled else None
+        )
+        with self.database.connection() as connection:
+            result = connection.execute(
+                """
+                UPDATE users
+                SET service_notification_consent = ?,
+                    service_notification_consent_at = ?,
+                    service_notification_consent_version = ?
+                WHERE id = ? AND id != ?
+                """,
+                (
+                    int(enabled),
+                    consented_at,
+                    consent_version,
+                    user_id,
+                    self.database.LEGACY_USER_ID,
+                ),
+            )
+        return self.get_user(user_id) if result.rowcount == 1 else None
 
     def delete_user(self, user_id: str, reason: AccountDeletionReason) -> bool:
         deleted_at = datetime.now(timezone.utc).isoformat()

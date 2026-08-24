@@ -19,6 +19,8 @@ import type {
   MetricAssessment,
   NewsArticle,
   NewsFeed,
+  NotificationCategory,
+  NotificationList,
   PortfolioPosition,
   PortfolioSummary,
   PortfolioTransaction,
@@ -42,7 +44,23 @@ type BackendAuthUser = {
   gender: Gender;
   personalization_consent: boolean;
   personalization_consent_at: string | null;
+  service_notification_consent: boolean;
+  service_notification_consent_at: string | null;
   created_at: string;
+};
+
+type BackendNotificationItem = {
+  id: number;
+  category: NotificationCategory;
+  title: string;
+  message: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+type BackendNotificationList = {
+  items: BackendNotificationItem[];
+  unread_count: number;
 };
 
 type BackendAuthSession = {
@@ -301,6 +319,8 @@ function normalizeAuthUser(user: BackendAuthUser): AuthUser {
     gender: user.gender,
     personalizationConsent: user.personalization_consent,
     personalizationConsentAt: user.personalization_consent_at,
+    serviceNotificationConsent: user.service_notification_consent,
+    serviceNotificationConsentAt: user.service_notification_consent_at,
     createdAt: user.created_at,
   };
 }
@@ -477,7 +497,9 @@ export async function registerUser(input: {
   birth_date: string;
   gender: Gender;
   account_creation_consent: true;
+  privacy_collection_consent: true;
   personalization_consent: boolean;
+  service_notification_consent: boolean;
 }): Promise<AuthSession> {
   const session = await request<BackendAuthSession>(`${API_BASE_URL}/auth/register`, {
     method: "POST",
@@ -524,6 +546,46 @@ export async function deleteAccount(input: {
   return request<void>(`${API_BASE_URL}/auth/account`, {
     method: "DELETE",
     body: JSON.stringify(input),
+  });
+}
+
+export async function updateNotificationPreference(
+  enabled: boolean,
+): Promise<AuthUser> {
+  const user = await request<BackendAuthUser>(
+    `${API_BASE_URL}/auth/preferences/notifications`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ service_notification_consent: enabled }),
+    },
+  );
+  return normalizeAuthUser(user);
+}
+
+export async function getNotifications(): Promise<NotificationList> {
+  const result = await request<BackendNotificationList>(`${API_BASE_URL}/notifications`);
+  return {
+    items: result.items.map((item) => ({
+      id: item.id,
+      category: item.category,
+      title: item.title,
+      message: item.message,
+      createdAt: item.created_at,
+      readAt: item.read_at,
+    })),
+    unreadCount: result.unread_count,
+  };
+}
+
+export async function markNotificationRead(notificationId: number): Promise<void> {
+  return request<void>(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+    method: "PATCH",
+  });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  return request<void>(`${API_BASE_URL}/notifications/read-all`, {
+    method: "PATCH",
   });
 }
 

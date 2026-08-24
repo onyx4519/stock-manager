@@ -31,7 +31,9 @@ class UserRegister(UserCredentials):
     birth_date: date
     gender: Gender = Gender.UNSPECIFIED
     account_creation_consent: Literal[True]
+    privacy_collection_consent: Literal[True]
     personalization_consent: bool = False
+    service_notification_consent: bool = False
 
     @field_validator("display_name")
     @classmethod
@@ -59,6 +61,8 @@ class AuthUser(BaseModel):
     gender: Gender = Gender.UNSPECIFIED
     personalization_consent: bool = False
     personalization_consent_at: datetime | None = None
+    service_notification_consent: bool = False
+    service_notification_consent_at: datetime | None = None
     created_at: datetime
 
 
@@ -81,3 +85,7 @@ class AccountDeletionReason(StrEnum):
 class AccountDeletionRequest(BaseModel):
     confirmed: Literal[True]
     reason: AccountDeletionReason
+
+
+class NotificationPreferenceUpdate(BaseModel):
+    service_notification_consent: bool

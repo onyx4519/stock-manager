@@ -1,5 +1,6 @@
 export type DataStatus = "REALTIME" | "DELAYED" | "EOD" | "MOCK" | "UNAVAILABLE";
 export type Gender = "UNSPECIFIED" | "MALE" | "FEMALE";
+export type NotificationCategory = "NOTICE" | "ACCOUNT" | "SERVICE";
 
 export type StockQuote = {
   symbol: string;
@@ -40,7 +41,23 @@ export type AuthUser = {
   gender: Gender;
   personalizationConsent: boolean;
   personalizationConsentAt: string | null;
+  serviceNotificationConsent: boolean;
+  serviceNotificationConsentAt: string | null;
   createdAt: string;
+};
+
+export type NotificationItem = {
+  id: number;
+  category: NotificationCategory;
+  title: string;
+  message: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type NotificationList = {
+  items: NotificationItem[];
+  unreadCount: number;
 };
 
 export type AuthSession = {

@@ -87,7 +87,10 @@ export async function registerAction(
     ? genderValue
     : "UNSPECIFIED";
   if (formData.get("accountCreationConsent") !== "on") {
-    return { message: "계정 생성 및 서비스 이용에 동의해 주세요." };
+    return { message: "서비스 이용약관에 동의해 주세요." };
+  }
+  if (formData.get("privacyCollectionConsent") !== "on") {
+    return { message: "개인정보 수집·이용에 동의해 주세요." };
   }
   try {
     const session = await registerUser({
@@ -96,7 +99,10 @@ export async function registerAction(
       birth_date: birthDate,
       gender,
       account_creation_consent: true,
+      privacy_collection_consent: true,
       personalization_consent: formData.get("personalizationConsent") === "on",
+      service_notification_consent:
+        formData.get("serviceNotificationConsent") === "on",
     });
     (await cookies()).set(SESSION_COOKIE_NAME, session.accessToken, cookieOptions);
   } catch (error) {

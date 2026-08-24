@@ -1,4 +1,5 @@
 import { DeleteAccountPanel } from "@/components/DeleteAccountPanel";
+import { NotificationSettingsForm } from "@/components/NotificationSettingsForm";
 import { requireCurrentUser } from "@/lib/auth";
 
 
@@ -28,7 +29,7 @@ export default async function AccountPage() {
           <div className="eyebrow">My account</div>
           <h1>내 정보</h1>
           <p className="muted accountIntro">
-            로그인한 계정의 기본 정보와 회원 탈퇴 기능을 관리합니다.
+            로그인한 계정의 기본 정보와 알림 설정을 관리합니다.
           </p>
         </div>
       </header>
@@ -66,6 +67,8 @@ export default async function AccountPage() {
           </div>
         </dl>
       </section>
+
+      <NotificationSettingsForm enabled={user.serviceNotificationConsent} />
 
       <DeleteAccountPanel userId={user.id} />
     </div>

@@ -24,7 +24,9 @@ export function AuthForm({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [consentModalOpen, setConsentModalOpen] = useState(false);
   const [accountCreationConsent, setAccountCreationConsent] = useState(false);
+  const [privacyCollectionConsent, setPrivacyCollectionConsent] = useState(false);
   const [personalizationConsent, setPersonalizationConsent] = useState(false);
+  const [serviceNotificationConsent, setServiceNotificationConsent] = useState(false);
   const registering = mode === "register";
 
   useEffect(() => {
@@ -43,7 +45,9 @@ export function AuthForm({
     if (pending) return;
     setConsentModalOpen(false);
     setAccountCreationConsent(false);
+    setPrivacyCollectionConsent(false);
     setPersonalizationConsent(false);
+    setServiceNotificationConsent(false);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -53,7 +57,7 @@ export function AuthForm({
       openConsentModal();
       return;
     }
-    if (!accountCreationConsent) event.preventDefault();
+    if (!accountCreationConsent || !privacyCollectionConsent) event.preventDefault();
   };
 
   const closeFromBackdrop = (event: MouseEvent<HTMLDialogElement>) => {
@@ -191,16 +195,60 @@ export function AuthForm({
                   type="checkbox"
                 />
                 <span>
-                  <strong>[필수]</strong> 계정 생성 및 서비스 이용에 동의합니다.
+                  <strong>[필수]</strong> 서비스 이용약관에 동의합니다.
                 </span>
               </label>
               <div className="consentDetails">
                 <ul>
-                  <li>목적: 회원 계정 생성 및 로그인·회원 서비스 제공</li>
-                  <li>처리 정보: 이메일, 사용자명, 생년월일, 성별 및 암호화된 인증정보</li>
-                  <li>보유·이용 기간: 회원 탈퇴 시까지</li>
+                  <li>서비스는 주식 정보 탐색과 개인 포트폴리오 관리 기능을 제공합니다.</li>
+                  <li>표시되는 정보는 투자 권유가 아니며 최종 판단과 책임은 사용자에게 있습니다.</li>
+                  <li>사용자는 타인의 계정을 침해하거나 서비스를 부정하게 이용해서는 안 됩니다.</li>
                 </ul>
-                <p>동의하지 않으면 계정을 생성할 수 없습니다.</p>
+                <p><Link className="inlineLink" href="/terms" target="_blank">서비스 이용약관 전체 보기</Link></p>
+              </div>
+            </section>
+
+            <section className="accountConsentSection">
+              <label className="consentOption">
+                <input
+                  checked={privacyCollectionConsent}
+                  name="privacyCollectionConsent"
+                  onChange={(event) => setPrivacyCollectionConsent(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  <strong>[필수]</strong> 개인정보 수집·이용에 동의합니다.
+                </span>
+              </label>
+              <div className="consentDetails">
+                <ul>
+                  <li>목적: 계정 생성, 로그인, 본인 식별 및 회원 서비스 제공</li>
+                  <li>항목: 이메일, 사용자명, 생년월일, 성별, 암호화된 인증정보</li>
+                  <li>보유 기간: 회원 탈퇴 시까지 또는 관계 법령상 보존 기간</li>
+                </ul>
+                <p>동의하지 않으면 계정을 생성할 수 없습니다. <Link className="inlineLink" href="/privacy" target="_blank">개인정보 처리방침 보기</Link></p>
+              </div>
+            </section>
+
+            <section className="accountConsentSection">
+              <label className="consentOption">
+                <input
+                  checked={serviceNotificationConsent}
+                  name="serviceNotificationConsent"
+                  onChange={(event) => setServiceNotificationConsent(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  <strong>[선택]</strong> 서비스 알림 수신에 동의합니다.
+                </span>
+              </label>
+              <div className="consentDetails">
+                <ul>
+                  <li>목적: 서비스 공지와 계정 관련 알림의 미확인 표시 제공</li>
+                  <li>적용 범위: 현재 앱 내부 알림 배지 및 향후 별도 안내되는 알림 기능</li>
+                  <li>보유 기간: 동의 철회 또는 회원 탈퇴 시까지</li>
+                </ul>
+                <p>동의하지 않아도 알림센터에서 공지를 직접 확인할 수 있습니다.</p>
               </div>
             </section>
 
@@ -244,7 +292,7 @@ export function AuthForm({
             </button>
             <button
               className="primaryButton"
-              disabled={!accountCreationConsent || pending}
+              disabled={!accountCreationConsent || !privacyCollectionConsent || pending}
               type="submit"
             >
               {pending ? "처리 중" : "동의하고 계정 만들기"}

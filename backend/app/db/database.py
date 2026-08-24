@@ -32,6 +32,7 @@ class SQLiteDatabase:
                 self._migrate_user_ownership(connection)
                 self._migrate_basic_profile(connection)
                 self._migrate_account_creation_consent(connection)
+                self._migrate_privacy_and_notification_consents(connection)
                 self._migrate_personalization_consent(connection)
                 self._migrate_account_deletion_feedback(connection)
                 connection.execute("PRAGMA optimize")
@@ -168,6 +169,28 @@ class SQLiteDatabase:
             connection.execute(
                 "ALTER TABLE users ADD COLUMN account_creation_consent_version TEXT"
             )
+
+    @staticmethod
+    def _migrate_privacy_and_notification_consents(
+        connection: sqlite3.Connection,
+    ) -> None:
+        user_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info('users')")
+        }
+        additions = {
+            "privacy_collection_consent_at": "TEXT",
+            "privacy_collection_consent_version": "TEXT",
+            "service_notification_consent": (
+                "INTEGER NOT NULL DEFAULT 0 CHECK(service_notification_consent IN (0, 1))"
+            ),
+            "service_notification_consent_at": "TEXT",
+            "service_notification_consent_version": "TEXT",
+        }
+        for column, definition in additions.items():
+            if column not in user_columns:
+                connection.execute(
+                    f"ALTER TABLE users ADD COLUMN {column} {definition}"
+                )
 
     @staticmethod
     def _migrate_personalization_consent(

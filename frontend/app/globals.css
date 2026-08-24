@@ -16,6 +16,10 @@ button, input, select { font:inherit; }
 .accountLink, .accountButton { color:var(--muted); font-size:12px; white-space:nowrap; }
 .accountLink { border:1px solid var(--border); border-radius:999px; padding:7px 10px; }
 .accountStatus { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; white-space:nowrap; }
+.notificationLink { position:relative; display:grid; place-items:center; width:34px; height:34px; border:1px solid var(--border); border-radius:50%; color:var(--muted); }
+.notificationLink:hover { color:var(--text); border-color:#3d5279; }
+.notificationLink svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.notificationCount { position:absolute; top:-6px; right:-7px; min-width:18px; height:18px; display:grid; place-items:center; padding:0 4px; border:2px solid var(--bg); border-radius:999px; background:#ff6673; color:#fff; font-size:9px; font-weight:800; }
 .accountNameLink, .accountDeleteLink, .accountTextButton { color:var(--text); padding:4px; }
 .accountNameLink:hover, .accountDeleteLink:hover, .accountTextButton:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .accountDeleteLink, .accountTextButton { border:0; background:transparent; font-size:12px; cursor:pointer; }
@@ -189,8 +193,9 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountConsentMessage { align-self:center; margin-right:auto; }
 .accountConsentActions .primaryButton { width:auto; min-width:178px; }
 .formMessageText { color:#ffb4b4; font-size:12px; margin:0; }
+.formSuccessText { color:#a7f3d0; font-size:12px; margin:0; }
 .authSwitch { color:var(--muted); font-size:12px; text-align:center; margin:0; }
-.accountPage { width:min(760px,100%); min-height:calc(100vh - 70px); margin:0 auto; grid-template-rows:auto auto 1fr; }
+.accountPage { width:min(760px,100%); min-height:calc(100vh - 70px); margin:0 auto; grid-template-rows:auto auto auto 1fr; }
 .accountIntro { margin:12px 0 0; }
 .accountDetailsCard { display:grid; gap:16px; }
 .accountDetailsCard h2 { margin-bottom:0; }
@@ -199,6 +204,33 @@ button:disabled { cursor:not-allowed; opacity:.55; }
 .accountDetails dt { color:var(--muted); font-size:13px; }
 .accountDetails dd { margin:0; overflow-wrap:anywhere; }
 .accountDeletionArea { width:100%; align-self:end; justify-self:start; display:grid; justify-items:start; padding-top:24px; }
+.notificationSettingsCard { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; }
+.notificationSettingsCard h2 { margin-bottom:8px; }
+.notificationSettingsCard p { margin-bottom:0; line-height:1.55; }
+.notificationSettingToggle { display:flex; align-items:center; gap:9px; color:var(--text); font-size:13px; cursor:pointer; }
+.notificationSettingToggle input { width:18px; height:18px; accent-color:var(--accent); }
+.notificationSettingActions { grid-column:1 / -1; display:flex; align-items:center; justify-content:flex-end; gap:14px; }
+.notificationPage, .policyPage { width:min(860px,100%); margin:0 auto; }
+.notificationIntro { margin:12px 0 0; }
+.notificationPreferenceNotice { border-color:#5b4b2a; }
+.notificationPreferenceNotice strong { color:#ffd479; }
+.notificationPreferenceNotice p { margin:8px 0 0; color:var(--muted); font-size:13px; }
+.notificationList { display:grid; gap:12px; }
+.notificationCard { display:grid; gap:10px; border-left:3px solid var(--accent); }
+.notificationCardRead { border-left-color:var(--border); opacity:.78; }
+.notificationCardHeader { display:flex; align-items:center; justify-content:space-between; gap:16px; color:var(--muted); font-size:11px; }
+.notificationCategory { display:inline-flex; border-radius:999px; padding:4px 8px; font-weight:700; }
+.notificationCategory-notice { color:#bfd4ff; background:#233552; }
+.notificationCategory-account { color:#d8c4ff; background:#3a2c55; }
+.notificationCategory-service { color:#a7f3d0; background:#193d31; }
+.notificationCard h2 { margin:0; }
+.notificationCard > p { margin:0; color:var(--muted); line-height:1.6; }
+.notificationCard form { justify-self:end; }
+.policyContent { display:grid; gap:8px; line-height:1.7; }
+.policyContent h2 { margin:16px 0 0; }
+.policyContent h2:first-child { margin-top:0; }
+.policyContent p { color:var(--muted); margin-bottom:0; }
+.policyDraftNotice { margin-top:16px; border:1px solid #6e5827; border-radius:10px; padding:12px; color:#ffd479; font-size:12px; }
 .accountDeletionModal { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 32px); margin:auto; border:1px solid var(--border); border-radius:16px; padding:24px; color:var(--text); background:var(--panel); box-shadow:0 24px 70px rgba(0,0,0,.55); overflow:auto; }
 .accountDeletionModal[open] { display:grid; gap:18px; }
 .accountDeletionModal::backdrop { background:rgba(3,5,8,.76); backdrop-filter:blur(4px); }
@@ -244,6 +276,9 @@ button:disabled { cursor:not-allowed; opacity:.55; }
   .analysisSummaryGrid, .analysisMetricGrid { grid-template-columns:1fr; }
   .accountPage { min-height:calc(100vh - 138px); }
   .accountDetails > div { grid-template-columns:1fr; gap:6px; }
+  .notificationSettingsCard { grid-template-columns:1fr; }
+  .notificationSettingActions { justify-content:stretch; align-items:stretch; flex-direction:column; }
+  .notificationSettingActions .primaryButton { width:100%; }
   .accountDeletionModal, .accountConsentModal { padding:20px 18px; }
   .accountConsentActions { display:grid; grid-template-columns:1fr; }
   .accountConsentMessage { margin-right:0; }

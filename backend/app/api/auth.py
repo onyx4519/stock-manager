@@ -8,6 +8,7 @@ from app.schemas.auth import (
     AccountDeletionRequest,
     AuthSession,
     AuthUser,
+    NotificationPreferenceUpdate,
     UserCredentials,
     UserRegister,
 )
@@ -61,6 +62,20 @@ def login(payload: UserCredentials) -> AuthSession:
 @router.get("/me", response_model=AuthUser)
 def me(user: Annotated[AuthUser, Depends(get_current_user)]) -> AuthUser:
     return user
+
+
+@router.patch("/preferences/notifications", response_model=AuthUser)
+def update_notification_preference(
+    payload: NotificationPreferenceUpdate,
+    user: Annotated[AuthUser, Depends(get_current_user)],
+) -> AuthUser:
+    try:
+        return service.update_notification_preference(
+            user.id,
+            payload.service_notification_consent,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Account not found.") from exc
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
