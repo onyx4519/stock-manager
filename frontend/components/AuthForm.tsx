@@ -46,7 +46,7 @@ export function AuthForm({
                   name="birthMonth"
                   required
                 >
-                  <option disabled value="">월 선택</option>
+                  <option disabled value="">MM</option>
                   {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                     <option key={month} value={month}>{month}월</option>
                   ))}
