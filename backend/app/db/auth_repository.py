@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 
 from app.db.database import SQLiteDatabase
-from app.schemas.auth import AccountDeletionReason, AuthUser, Gender
+from app.schemas.auth import AccountDeletionReason, AuthUser, Gender, UserRole
 
 
 class DuplicateUserError(ValueError):
@@ -31,6 +31,8 @@ class AuthRepository:
         password: str,
         birth_date: date | None = None,
         gender: Gender = Gender.UNSPECIFIED,
+        role: UserRole = UserRole.USER,
+        claim_legacy_data: bool = True,
         account_creation_consent: bool = False,
         privacy_collection_consent: bool = False,
         personalization_consent: bool = False,
@@ -67,15 +69,15 @@ class AuthRepository:
         password_hash = self._hash_password(password)
         try:
             with self.database.connection() as connection:
-                real_users = connection.execute(
-                    "SELECT COUNT(*) FROM users WHERE id != ?",
+                user_accounts = connection.execute(
+                    "SELECT COUNT(*) FROM users WHERE id != ? AND role = 'USER'",
                     (self.database.LEGACY_USER_ID,),
                 ).fetchone()[0]
                 connection.execute(
                     """
                     INSERT INTO users (
                       id, email, display_name, password_hash,
-                      birth_date, gender,
+                      birth_date, gender, role,
                       account_creation_consent_at,
                       account_creation_consent_version,
                       privacy_collection_consent_at,
@@ -86,7 +88,7 @@ class AuthRepository:
                       service_notification_consent_at,
                       service_notification_consent_version,
                       created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
@@ -95,6 +97,7 @@ class AuthRepository:
                         password_hash,
                         birth_date.isoformat() if birth_date is not None else None,
                         gender.value,
+                        role.value,
                         account_consented_at,
                         account_consent_version,
                         privacy_consented_at,
@@ -108,7 +111,7 @@ class AuthRepository:
                         created_at,
                     ),
                 )
-                if real_users == 0:
+                if user_accounts == 0 and claim_legacy_data:
                     connection.execute(
                         "UPDATE transactions SET user_id = ? WHERE user_id = ?",
                         (user_id, self.database.LEGACY_USER_ID),
@@ -129,7 +132,7 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, password_hash, birth_date, gender,
+                SELECT id, email, display_name, password_hash, birth_date, gender, role,
                        personalization_consent, personalization_consent_at,
                        service_notification_consent,
                        service_notification_consent_at,
@@ -147,7 +150,7 @@ class AuthRepository:
         with self.database.connection() as connection:
             row = connection.execute(
                 """
-                SELECT id, email, display_name, birth_date, gender,
+                SELECT id, email, display_name, birth_date, gender, role,
                        personalization_consent,
                        personalization_consent_at,
                        service_notification_consent,
@@ -184,7 +187,7 @@ class AuthRepository:
             row = connection.execute(
                 """
                 SELECT users.id, users.email, users.display_name,
-                       users.birth_date, users.gender,
+                       users.birth_date, users.gender, users.role,
                        users.personalization_consent,
                        users.personalization_consent_at,
                        users.service_notification_consent,

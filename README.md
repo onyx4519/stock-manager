@@ -30,6 +30,17 @@ cd backend
 pytest -q
 ```
 
+관리자 계정은 일반 회원가입에서 만들 수 없습니다. 백엔드 터미널에서 다음
+명령을 실행하고, 화면에 노출되지 않는 입력창에 12자 이상의 비밀번호를
+입력합니다.
+
+```bash
+cd backend
+python scripts/create_admin.py --email admin@example.com --display-name "관리자"
+```
+
+관리자 이메일과 비밀번호를 소스 코드나 `.env`에 저장하지 마세요.
+
 ## 시장 데이터 모드
 
 Mock, Massive, KIS 또는 국내외 통합 모드를 선택할 수 있습니다.

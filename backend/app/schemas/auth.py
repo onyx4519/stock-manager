@@ -12,6 +12,11 @@ class Gender(StrEnum):
     FEMALE = "FEMALE"
 
 
+class UserRole(StrEnum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+
+
 class UserCredentials(BaseModel):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=128)
@@ -59,6 +64,7 @@ class AuthUser(BaseModel):
     display_name: str
     birth_date: date | None = None
     gender: Gender = Gender.UNSPECIFIED
+    role: UserRole = UserRole.USER
     personalization_consent: bool = False
     personalization_consent_at: datetime | None = None
     service_notification_consent: bool = False

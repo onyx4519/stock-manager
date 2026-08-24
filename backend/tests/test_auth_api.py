@@ -1,5 +1,6 @@
 import sqlite3
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
@@ -66,6 +67,7 @@ def test_authentication_and_user_data_isolation(tmp_path):
         assert first.status_code == 201
         assert second.status_code == 201
         assert first.json()["user"]["birth_date"] == "2000-01-02"
+        assert first.json()["user"]["role"] == "USER"
         assert first.json()["user"]["gender"] == "UNSPECIFIED"
         assert first.json()["user"]["personalization_consent"] is False
         assert first.json()["user"]["personalization_consent_at"] is None
@@ -172,6 +174,68 @@ def test_auth_rejects_duplicate_email_and_bad_password(tmp_path):
             json={"email": payload["email"], "password": "wrong-pass"},
         )
         assert invalid.status_code == 401
+    finally:
+        auth_api.service = original
+
+
+def test_admin_account_creation_and_server_side_permission_check(tmp_path):
+    database = SQLiteDatabase(tmp_path / "admin-auth.db")
+    auth_service = AuthService(AuthRepository(database))
+    original = auth_api.service
+    auth_api.service = auth_service
+    client = TestClient(app)
+    try:
+        admin = auth_service.create_admin(
+            email="admin@example.com",
+            display_name="System Admin",
+            password="strong-admin-password",
+        )
+        assert admin.role == "ADMIN"
+
+        admin_login = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "admin@example.com",
+                "password": "strong-admin-password",
+            },
+        )
+        assert admin_login.status_code == 200
+        assert admin_login.json()["user"]["role"] == "ADMIN"
+        admin_headers = {
+            "Authorization": f"Bearer {admin_login.json()['access_token']}"
+        }
+        assert client.get(
+            "/api/v1/auth/admin/me", headers=admin_headers
+        ).status_code == 200
+
+        registration = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "regular@example.com",
+                "display_name": "Regular User",
+                "password": "safe-password",
+                "birth_date": "2000-01-01",
+                "gender": "UNSPECIFIED",
+                "account_creation_consent": True,
+                "privacy_collection_consent": True,
+                "role": "ADMIN",
+            },
+        )
+        assert registration.status_code == 201
+        assert registration.json()["user"]["role"] == "USER"
+        regular_headers = {
+            "Authorization": f"Bearer {registration.json()['access_token']}"
+        }
+        assert client.get(
+            "/api/v1/auth/admin/me", headers=regular_headers
+        ).status_code == 403
+
+        with pytest.raises(ValueError):
+            auth_service.create_admin(
+                email="weak@example.com",
+                display_name="Weak Admin",
+                password="too-short",
+            )
     finally:
         auth_api.service = original
 
@@ -362,6 +426,11 @@ def test_legacy_records_are_preserved_and_claimed_by_first_user(tmp_path):
 
     database = SQLiteDatabase(path)
     repository = AuthRepository(database)
+    admin = AuthService(repository).create_admin(
+        email="admin-owner@example.com",
+        display_name="Admin Owner",
+        password="strong-admin-password",
+    )
     user = repository.create_user(
         email="owner@example.com",
         display_name="Owner",
@@ -369,7 +438,9 @@ def test_legacy_records_are_preserved_and_claimed_by_first_user(tmp_path):
     )
 
     records = WatchlistRepository(database).list(user.id)
+    admin_records = WatchlistRepository(database).list(admin.id)
     assert [record.symbol for record in records] == ["NVDA"]
+    assert admin_records == []
     with database.connection() as connection:
         columns = {
             row["name"]
@@ -415,7 +486,7 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
     with database.connection() as connection:
         row = connection.execute(
             """
-            SELECT birth_date, gender,
+            SELECT birth_date, gender, role,
                    account_creation_consent_at,
                    account_creation_consent_version,
                    privacy_collection_consent_at,
@@ -440,6 +511,7 @@ def test_existing_users_receive_safe_profile_and_consent_defaults(tmp_path):
 
     assert row["birth_date"] is None
     assert row["gender"] == "UNSPECIFIED"
+    assert row["role"] == "USER"
     assert row["account_creation_consent_at"] is None
     assert row["account_creation_consent_version"] is None
     assert row["privacy_collection_consent_at"] is None

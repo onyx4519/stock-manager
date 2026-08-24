@@ -6,6 +6,7 @@ from app.schemas.auth import (
     AuthUser,
     UserCredentials,
     UserRegister,
+    UserRole,
 )
 from app.schemas.notifications import NotificationCategory
 
@@ -30,6 +31,7 @@ class AuthService:
             password=payload.password,
             birth_date=payload.birth_date,
             gender=payload.gender,
+            role=UserRole.USER,
             account_creation_consent=payload.account_creation_consent,
             privacy_collection_consent=payload.privacy_collection_consent,
             personalization_consent=payload.personalization_consent,
@@ -44,6 +46,29 @@ class AuthService:
                 message="Stock Manager 계정이 생성되었습니다.",
             )
         return self._create_session(user)
+
+    def create_admin(
+        self,
+        *,
+        email: str,
+        display_name: str,
+        password: str,
+    ) -> AuthUser:
+        if len(password) < 12:
+            raise ValueError("Administrator password must contain at least 12 characters.")
+        credentials = UserCredentials(email=email, password=password)
+        normalized_display_name = display_name.strip()
+        if not 2 <= len(normalized_display_name) <= 50:
+            raise ValueError(
+                "Administrator display name must contain between 2 and 50 characters."
+            )
+        return self.repository.create_user(
+            email=str(credentials.email),
+            display_name=normalized_display_name,
+            password=credentials.password,
+            role=UserRole.ADMIN,
+            claim_legacy_data=False,
+        )
 
     def login(self, payload: UserCredentials) -> AuthSession:
         user = self.repository.verify_credentials(str(payload.email), payload.password)

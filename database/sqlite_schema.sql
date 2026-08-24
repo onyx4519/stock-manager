@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   birth_date TEXT,
   gender TEXT NOT NULL DEFAULT 'UNSPECIFIED'
     CHECK(gender IN ('UNSPECIFIED', 'MALE', 'FEMALE')),
+  role TEXT NOT NULL DEFAULT 'USER'
+    CHECK(role IN ('USER', 'ADMIN')),
   account_creation_consent_at TEXT,
   account_creation_consent_version TEXT,
   privacy_collection_consent_at TEXT,

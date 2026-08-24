@@ -1,5 +1,6 @@
 export type DataStatus = "REALTIME" | "DELAYED" | "EOD" | "MOCK" | "UNAVAILABLE";
 export type Gender = "UNSPECIFIED" | "MALE" | "FEMALE";
+export type UserRole = "USER" | "ADMIN";
 export type NotificationCategory = "NOTICE" | "ACCOUNT" | "SERVICE";
 
 export type StockQuote = {
@@ -39,6 +40,7 @@ export type AuthUser = {
   displayName: string;
   birthDate: string | null;
   gender: Gender;
+  role: UserRole;
   personalizationConsent: boolean;
   personalizationConsentAt: string | null;
   serviceNotificationConsent: boolean;

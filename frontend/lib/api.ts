@@ -29,6 +29,7 @@ import type {
   TransactionInput,
   TransactionType,
   WatchlistItem,
+  UserRole,
 } from "@/types/market";
 
 const API_BASE_URL =
@@ -42,6 +43,7 @@ type BackendAuthUser = {
   display_name: string;
   birth_date: string | null;
   gender: Gender;
+  role: UserRole;
   personalization_consent: boolean;
   personalization_consent_at: string | null;
   service_notification_consent: boolean;
@@ -317,6 +319,7 @@ function normalizeAuthUser(user: BackendAuthUser): AuthUser {
     displayName: user.display_name,
     birthDate: user.birth_date,
     gender: user.gender,
+    role: user.role,
     personalizationConsent: user.personalization_consent,
     personalizationConsentAt: user.personalization_consent_at,
     serviceNotificationConsent: user.service_notification_consent,

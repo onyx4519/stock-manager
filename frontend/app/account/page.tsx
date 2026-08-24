@@ -46,6 +46,10 @@ export default async function AccountPage() {
             <dd>{user.email}</dd>
           </div>
           <div>
+            <dt>계정 유형</dt>
+            <dd>{user.role === "ADMIN" ? "관리자" : "일반 사용자"}</dd>
+          </div>
+          <div>
             <dt>생년월일</dt>
             <dd>{user.birthDate ? formatDate(user.birthDate) : "기존 계정 정보 없음"}</dd>
           </div>

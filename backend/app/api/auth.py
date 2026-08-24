@@ -11,6 +11,7 @@ from app.schemas.auth import (
     NotificationPreferenceUpdate,
     UserCredentials,
     UserRegister,
+    UserRole,
 )
 from app.services.auth_service import DuplicateUserError, InvalidCredentialsError
 
@@ -43,6 +44,17 @@ def get_current_user(token: Annotated[str, Depends(get_session_token)]) -> AuthU
     return user
 
 
+def get_current_admin(
+    user: Annotated[AuthUser, Depends(get_current_user)],
+) -> AuthUser:
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator permission required.",
+        )
+    return user
+
+
 @router.post("/register", response_model=AuthSession, status_code=status.HTTP_201_CREATED)
 def register(payload: UserRegister) -> AuthSession:
     try:
@@ -61,6 +73,11 @@ def login(payload: UserCredentials) -> AuthSession:
 
 @router.get("/me", response_model=AuthUser)
 def me(user: Annotated[AuthUser, Depends(get_current_user)]) -> AuthUser:
+    return user
+
+
+@router.get("/admin/me", response_model=AuthUser)
+def admin_me(user: Annotated[AuthUser, Depends(get_current_admin)]) -> AuthUser:
     return user
 
 
