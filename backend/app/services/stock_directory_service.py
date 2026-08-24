@@ -38,7 +38,7 @@ class StockDirectoryService:
                 items=items,
                 sources=sorted({item.provider for item in items}),
                 warnings=[
-                    "검색어가 없을 때는 API 호출량을 줄이기 위해 설정된 시작 종목만 표시합니다."
+                    "검색어가 없을 때는 API 호출량을 줄이기 위해 설정된 주요 종목만 표시합니다."
                 ],
             )
 

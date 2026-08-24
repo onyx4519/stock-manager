@@ -42,11 +42,11 @@ MARKET_PROVIDER=mock
 
 ```env
 MARKET_PROVIDER=hybrid
-MASSIVE_SYMBOLS=NVDA,AAPL,MSFT
+MASSIVE_SYMBOLS=NVDA,AAPL,MSFT,AMZN,JPM
 MASSIVE_CACHE_SECONDS=900
 MASSIVE_NEWS_CACHE_SECONDS=900
 MASSIVE_API_KEY=발급받은_키
-KIS_SYMBOLS=005930
+KIS_SYMBOLS=005930,000660,005380,035420,105560
 KIS_ENVIRONMENT=real
 KIS_CACHE_SECONDS=900
 DART_CACHE_SECONDS=900
@@ -54,7 +54,7 @@ KIS_APP_KEY=발급받은_App_Key
 KIS_APP_SECRET=발급받은_App_Secret
 ```
 
-`MASSIVE_SYMBOLS`와 `KIS_SYMBOLS`는 홈·검색 첫 화면에 보여 줄 시작 종목입니다. 검색 가능한 전체 종목 수를 제한하는 설정이 아닙니다. 국내 종목은 KIS가 공식 배포하는 최신 KOSPI·KOSDAQ 마스터와 OpenDART의 공식 영문 기업명, 미국 활성 주식은 Massive 종목 디렉터리에서 검색합니다. 미국 종목의 한글명은 `backend/app/services/stock_aliases.py`의 검증된 별칭을 Massive 티커로 변환하며, 선택한 종목의 시세만 조회합니다. KIS 마스터를 일시적으로 불러오지 못한 경우에는 OpenDART 상장회사 목록을 대체 검색원으로 사용합니다.
+`MASSIVE_SYMBOLS`와 `KIS_SYMBOLS`는 홈·검색 첫 화면에 보여 줄 주요 종목입니다. 기본 구성은 국내 5개와 미국 5개이며, 시장 탐색을 위한 목록으로 투자 추천을 의미하지 않습니다. 검색 가능한 전체 종목 수를 제한하는 설정도 아닙니다. 국내 종목은 KIS가 공식 배포하는 최신 KOSPI·KOSDAQ 마스터와 OpenDART의 공식 영문 기업명, 미국 활성 주식은 Massive 종목 디렉터리에서 검색합니다. 미국 종목의 한글명은 `backend/app/services/stock_aliases.py`의 검증된 별칭을 Massive 티커로 변환하며, 선택한 종목의 시세만 조회합니다. KIS 마스터를 일시적으로 불러오지 못한 경우에는 OpenDART 상장회사 목록을 대체 검색원으로 사용합니다.
 
 영문 티커는 Massive, 6자리 국내 종목코드는 KIS로 자동 분기됩니다. 두 Provider 모두 최근 완료된 두 거래일의 종가로 변동률을 계산하고 `EOD`로 표시합니다. OAuth 토큰과 동일 종목 시세는 캐시하여 호출 제한을 줄이며, 외부 API 오류 시 Mock 값으로 자동 대체하지 않습니다.
 

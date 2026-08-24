@@ -49,9 +49,12 @@ export default async function StocksPage({
 
       <section>
         <div className="rowBetween gap sectionTitleRow">
-          <h2>{query ? `‘${query}’ 전체 시장 검색 결과` : "시작 종목"}</h2>
+          <h2>{query ? `‘${query}’ 전체 시장 검색 결과` : "주요 종목"}</h2>
           {result.search && <span className="muted">{result.search.totalCount}개</span>}
         </div>
+        {!query && (
+          <p className="searchNotice">시장 탐색을 위한 국내·미국 주요 종목이며 투자 추천을 의미하지 않습니다.</p>
+        )}
         {result.error ? (
           <ApiMessage title="종목을 불러오지 못했습니다" message={result.error} />
         ) : (
