@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import {
   type NotificationPreferenceState,
   updateNotificationPreferenceAction,
@@ -9,13 +9,14 @@ import {
 
 export function NotificationSettingsForm({ enabled }: { enabled: boolean }) {
   const [checked, setChecked] = useState(enabled);
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<
     NotificationPreferenceState,
     FormData
   >(updateNotificationPreferenceAction, undefined);
 
   return (
-    <form action={action} className="card notificationSettingsCard">
+    <form action={action} className="card notificationSettingsCard" ref={formRef}>
       <div>
         <h2>서비스 알림</h2>
         <p className="muted">
@@ -26,21 +27,22 @@ export function NotificationSettingsForm({ enabled }: { enabled: boolean }) {
       <label className="notificationSettingToggle">
         <input
           checked={checked}
+          disabled={pending}
           name="serviceNotificationConsent"
-          onChange={(event) => setChecked(event.target.checked)}
+          onChange={(event) => {
+            setChecked(event.target.checked);
+            formRef.current?.requestSubmit();
+          }}
           type="checkbox"
         />
-        <span>{checked ? "알림 켜짐" : "알림 꺼짐"}</span>
+        <span>{pending ? "저장 중" : checked ? "알림 켜짐" : "알림 꺼짐"}</span>
       </label>
-      <div className="notificationSettingActions">
+      <div aria-live="polite" className="notificationSettingStatus">
         {state?.message && (
           <p className={state.success ? "formSuccessText" : "formMessageText"} role="status">
             {state.message}
           </p>
         )}
-        <button className="primaryButton" disabled={pending} type="submit">
-          {pending ? "저장 중" : "설정 저장"}
-        </button>
       </div>
     </form>
   );
