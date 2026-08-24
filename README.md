@@ -44,6 +44,7 @@ MARKET_PROVIDER=mock
 MARKET_PROVIDER=hybrid
 MASSIVE_SYMBOLS=NVDA,AAPL,MSFT
 MASSIVE_CACHE_SECONDS=900
+MASSIVE_NEWS_CACHE_SECONDS=900
 MASSIVE_API_KEY=발급받은_키
 KIS_SYMBOLS=005930
 KIS_ENVIRONMENT=real
@@ -77,6 +78,7 @@ DATABASE_PATH=data/stock_manager.db
 - `DELETE /api/v1/watchlist/{symbol}`: 관심종목 삭제
 - `GET /api/v1/dart/companies/{stock_code}/disclosures`: 국내 종목 최근 공시
 - `GET /api/v1/dart/companies/{stock_code}/financials`: 국내 종목 주요 재무계정
+- `GET /api/v1/news?symbol={ticker}`: Massive 미국 종목 최신 뉴스
 
 원화와 달러 자산은 환율을 임의 적용하지 않고 KRW·USD별로 분리하여 표시합니다. 보유 수량을 초과하는 매도 거래는 저장하지 않습니다.
 
@@ -92,10 +94,9 @@ npm run dev
 
 ## 다음 구현 순서
 
-1. 뉴스 데이터 Provider 및 이벤트 통합
-2. 재무비율·위험지표 분석 계층 확장
-3. 사용자 인증 및 다중 사용자 데이터 분리
-4. Supabase/PostgreSQL 전환 및 배포 환경 구성
+1. 재무비율·위험지표 분석 계층 확장
+2. 사용자 인증 및 다중 사용자 데이터 분리
+3. Supabase/PostgreSQL 전환 및 배포 환경 구성
 
 ## 안전한 데이터 표시 원칙
 

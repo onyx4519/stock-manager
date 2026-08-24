@@ -8,6 +8,8 @@ import type {
   DartFinancialAccount,
   DartFinancialStatement,
   DataStatus,
+  NewsArticle,
+  NewsFeed,
   PortfolioPosition,
   PortfolioSummary,
   PortfolioTransaction,
@@ -140,6 +142,26 @@ type BackendDartFinancialStatement = {
   report_code: string;
   financial_statement_division: string | null;
   accounts: BackendDartFinancialAccount[];
+};
+
+type BackendNewsArticle = {
+  id: string;
+  title: string;
+  author: string | null;
+  description: string | null;
+  article_url: string;
+  image_url: string | null;
+  publisher_name: string;
+  publisher_homepage_url: string | null;
+  published_at: string;
+  tickers: string[];
+  provider: string;
+};
+
+type BackendNewsFeed = {
+  symbols: string[];
+  items: BackendNewsArticle[];
+  total_count: number;
 };
 
 export type BackendHealth = {
@@ -314,6 +336,22 @@ function normalizeDartFinancialAccount(
   };
 }
 
+function normalizeNewsArticle(item: BackendNewsArticle): NewsArticle {
+  return {
+    id: item.id,
+    title: item.title,
+    author: item.author,
+    description: item.description,
+    articleUrl: item.article_url,
+    imageUrl: item.image_url,
+    publisherName: item.publisher_name,
+    publisherHomepageUrl: item.publisher_homepage_url,
+    publishedAt: item.published_at,
+    tickers: item.tickers,
+    provider: item.provider,
+  };
+}
+
 export async function getHealth(): Promise<BackendHealth> {
   const backendOrigin = new URL(API_BASE_URL).origin;
   return request<BackendHealth>(`${backendOrigin}/health`);
@@ -392,6 +430,18 @@ export async function getDartFinancials(
     reportCode: result.report_code,
     financialStatementDivision: result.financial_statement_division,
     accounts: result.accounts.map(normalizeDartFinancialAccount),
+  };
+}
+
+export async function getNews(symbol?: string, limit = 20): Promise<NewsFeed> {
+  const url = new URL(`${API_BASE_URL}/news`);
+  if (symbol) url.searchParams.set("symbol", symbol);
+  url.searchParams.set("limit", String(limit));
+  const result = await request<BackendNewsFeed>(url.toString());
+  return {
+    symbols: result.symbols,
+    items: result.items.map(normalizeNewsArticle),
+    totalCount: result.total_count,
   };
 }
 

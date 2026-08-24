@@ -77,6 +77,26 @@ export type DartFinancialStatement = {
   accounts: DartFinancialAccount[];
 };
 
+export type NewsArticle = {
+  id: string;
+  title: string;
+  author: string | null;
+  description: string | null;
+  articleUrl: string;
+  imageUrl: string | null;
+  publisherName: string;
+  publisherHomepageUrl: string | null;
+  publishedAt: string;
+  tickers: string[];
+  provider: string;
+};
+
+export type NewsFeed = {
+  symbols: string[];
+  items: NewsArticle[];
+  totalCount: number;
+};
+
 export type PortfolioPosition = {
   symbol: string;
   companyName: string;

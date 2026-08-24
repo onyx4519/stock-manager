@@ -2,10 +2,12 @@ from fastapi.testclient import TestClient
 
 from app.api import market as market_api
 from app.api.dart import get_dart_provider
+from app.api.news import get_news_provider
 from app.main import app
 from app.providers.dart import DartAPIError, DartConfigurationError
 from app.providers.market import MarketProviderConfigurationError
 from app.providers.mock.market_provider import MockMarketProvider
+from app.providers.news import NewsProviderConfigurationError
 
 client = TestClient(app)
 
@@ -175,3 +177,56 @@ def test_dart_disclosures_and_financials():
     assert financials.status_code == 200
     assert financials.json()["financial_statement_division"] == "CFS"
     assert financials.json()["accounts"][0]["current_term_amount"] == 300000
+
+
+class StubNewsProvider:
+    symbols = ("NVDA", "AAPL")
+
+    def list_news(self, *, symbol=None, limit=20):
+        ticker = symbol.upper() if symbol else "NVDA"
+        return [
+            {
+                "id": "test-news-1",
+                "title": "NVIDIA announces quarterly results",
+                "author": "Reporter",
+                "description": "Results summary.",
+                "article_url": "https://example.com/news/1",
+                "image_url": None,
+                "publisher_name": "Example Finance",
+                "publisher_homepage_url": "https://example.com",
+                "published_at": "2026-08-24T12:30:00Z",
+                "tickers": [ticker],
+                "provider": "Massive",
+            }
+        ][:limit]
+
+
+class UnconfiguredNewsProvider:
+    symbols = ("NVDA",)
+
+    def list_news(self, *, symbol=None, limit=20):
+        raise NewsProviderConfigurationError("MASSIVE_API_KEY is not configured.")
+
+
+def test_news_endpoint_returns_normalized_feed():
+    app.dependency_overrides[get_news_provider] = StubNewsProvider
+    try:
+        response = client.get("/api/v1/news?symbol=nvda&limit=10")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["symbols"] == ["NVDA"]
+    assert response.json()["total_count"] == 1
+    assert response.json()["items"][0]["publisher_name"] == "Example Finance"
+
+
+def test_news_endpoint_reports_missing_configuration():
+    app.dependency_overrides[get_news_provider] = UnconfiguredNewsProvider
+    try:
+        response = client.get("/api/v1/news?symbol=NVDA")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "MASSIVE_API_KEY is not configured."

@@ -60,6 +60,11 @@ class Settings:
         self.massive_cache_seconds = int(os.getenv("MASSIVE_CACHE_SECONDS", "900"))
         if self.massive_cache_seconds <= 0:
             raise ValueError("MASSIVE_CACHE_SECONDS must be greater than zero.")
+        self.massive_news_cache_seconds = int(
+            os.getenv("MASSIVE_NEWS_CACHE_SECONDS", "900")
+        )
+        if self.massive_news_cache_seconds <= 0:
+            raise ValueError("MASSIVE_NEWS_CACHE_SECONDS must be greater than zero.")
         kis_symbols = os.getenv("KIS_SYMBOLS", "005930")
         self.kis_symbols = tuple(
             dict.fromkeys(

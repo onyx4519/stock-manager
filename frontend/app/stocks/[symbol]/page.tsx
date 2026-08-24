@@ -7,10 +7,12 @@ import {
   DartDisclosureSection,
   DartFinancialSection,
 } from "@/components/DartSections";
+import { NewsSection } from "@/components/NewsSections";
 import {
   ApiError,
   getDartDisclosures,
   getDartFinancials,
+  getNews,
   getQuote,
 } from "@/lib/api";
 
@@ -27,8 +29,8 @@ export async function generateMetadata({
   const quote = await getStockQuote(symbol).catch(() => null);
   const title = quote ? `${quote.companyName} (${quote.symbol})` : `종목 ${symbol}`;
   const description = quote
-    ? `${quote.companyName}의 EOD 시세와 OpenDART 재무·공시 정보입니다.`
-    : "종목 시세와 재무·공시 정보입니다.";
+    ? `${quote.companyName}의 EOD 시세와 재무·공시·뉴스 정보입니다.`
+    : "종목 시세와 재무·공시·뉴스 정보입니다.";
   return {
     title,
     description,
@@ -58,10 +60,11 @@ export default async function StockDetailPage({ params }: { params: Promise<{ sy
   const { symbol } = await params;
   const isDomestic = /^\d{6}$/.test(symbol);
   const previousBusinessYear = new Date().getFullYear() - 1;
-  const [quoteResult, disclosuresResult, financialsResult] = await Promise.all([
+  const [quoteResult, disclosuresResult, financialsResult, newsResult] = await Promise.all([
     capture(getStockQuote(symbol)),
     isDomestic ? capture(getDartDisclosures(symbol, 365, 10)) : Promise.resolve({ data: null, error: null }),
     isDomestic ? capture(getDartFinancials(symbol, previousBusinessYear, "11011")) : Promise.resolve({ data: null, error: null }),
+    isDomestic ? Promise.resolve({ data: null, error: null }) : capture(getNews(symbol, 10)),
   ]);
 
   if (quoteResult.error instanceof ApiError && quoteResult.error.status === 404) return notFound();
@@ -80,7 +83,10 @@ export default async function StockDetailPage({ params }: { params: Promise<{ sy
     {isDomestic ? <>
       <DartFinancialSection data={financialsResult.data} error={dartErrorMessage(financialsResult.error)} />
       <DartDisclosureSection data={disclosuresResult.data} error={dartErrorMessage(disclosuresResult.error)} />
-    </> : <div className="card emptyState">OpenDART 재무·공시는 국내 6자리 종목에만 제공됩니다.</div>}
+    </> : <>
+      <NewsSection data={newsResult.data} error={newsResult.error ? "Massive 뉴스를 불러오지 못했습니다." : null} />
+      <div className="card emptyState">OpenDART 재무·공시는 국내 6자리 종목에만 제공됩니다.</div>
+    </>}
     <div className="card"><h3>데이터 해석 주의</h3><p className="muted">시세는 EOD 기준이며 재무정보는 제출인이 공시한 원문을 표시합니다. 이 화면은 투자 판단이나 수익을 보장하지 않습니다.</p></div>
   </div>;
 }
